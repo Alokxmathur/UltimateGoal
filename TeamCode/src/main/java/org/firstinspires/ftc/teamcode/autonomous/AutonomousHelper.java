@@ -29,28 +29,35 @@ public abstract class AutonomousHelper extends OpMode {
 
     protected Match match;
     protected Robot robot;
-    protected Alliance.Color allianceColor;
 
-    public static final long VUFORIA_SETTLING_TIME = 2500; //msecs for vuforia to see image
+    public static final long VUFORIA_SETTLING_TIME = 1500; //msecs for vuforia to see image
     public static final double CAUTIOUS_SPEED = 0.6;
     public static final double FAST_SPEED = 1.0;
 
     protected boolean initialMovementDone, initialMovementQueued;
+    protected boolean wobbleLifted, queuedWobbleLift;
     protected boolean numberOfRingsDetermined, determinationQueued;
     protected boolean wobbleGoalDeposited, wobbleGoalDepositQueued;
     protected boolean navigated, navigationQueued;
 
+    double initialForwardMovement = .5*Field.TILE_WIDTH,
+            initialLeftMovement = 0,
+            forwardMovement=0,
+            secondLeftMovement=0,
+            backwardsMovementToNavigate = 0;
     /*
      * Code to run ONCE when the driver hits INIT
      */
-    public void init(Alliance.Color allianceColor) {
-        this.allianceColor = allianceColor;
+    public void init(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
         this.match = Match.getNewInstance();
         match.init();
         match.setAlliance(allianceColor);
+        match.setStartingPosition(startingPosition);
+
         this.robot = match.getRobot();
-        this.robot.init(hardwareMap, telemetry, match, allianceColor);
-        robot.queuePrimaryOperation(new CameraOperation(CameraOperation.CameraOperationType.FLASH_ON, "Turn on flash"));
+        this.robot.init(hardwareMap, telemetry, match);
+        //robot.queueSecondaryOperation(new CameraOperation(CameraOperation.CameraOperationType.FLASH_ON, "Turn on flash"));
+        robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.INITIAL, "Lift wobble goal slightly"));
 
         AutoTransitioner.transitionOnStop(this, "Phoebe: Driver Controlled");
     }
@@ -60,12 +67,9 @@ public abstract class AutonomousHelper extends OpMode {
     @Override
     public void init_loop() {
         if (robot.fullyInitialized()) {
-            //keep looking for the rings on the launch stack
-            match.setNumberOfRings(robot.getNumberOfRings());
-            //update driver station with number of rings
-            telemetry.addData("Alliance", allianceColor);
+            telemetry.addData("Alliance", match.getAllianceColor());
+            telemetry.addData("Starting position", match.getStartingPosition());
             telemetry.addData("Status", "Ready to autonomous");
-            telemetry.addData("Rings", match.getNumberOfRings());
             telemetry.addData("Motors", robot.getMotorStatus());
             telemetry.addData("Picker", robot.getPickerArmStatus());
             telemetry.update();
@@ -83,13 +87,20 @@ public abstract class AutonomousHelper extends OpMode {
                 initialMovementQueued = true;
             }
             initialMovementDone = robot.primaryOperationsCompleted();
+        } else if (!wobbleLifted) {
+            if (!queuedWobbleLift) {
+                Match.log("Lifting wobble");
+                queuedWobbleLift();
+                queuedWobbleLift = true;
+            }
+            wobbleLifted = robot.operationsCompleted();
         } else if (!numberOfRingsDetermined) {
             if (!determinationQueued) {
                 Match.log("Determining number of rings");
                 queueRingDetermination();
                 determinationQueued = true;
             }
-            numberOfRingsDetermined = robot.operationsCompleted();
+            numberOfRingsDetermined = true;
         } else if (!wobbleGoalDeposited) {
             if (!wobbleGoalDepositQueued) {
                 Match.log("Depositing wobble goal");
@@ -105,6 +116,7 @@ public abstract class AutonomousHelper extends OpMode {
             }
             navigated = robot.operationsCompleted();
         }
+        telemetry.addData("Rings:", match.getNumberOfRings());
     }
 
     /**
@@ -117,11 +129,18 @@ public abstract class AutonomousHelper extends OpMode {
     protected void queueInitialOperations() {
         //queue following operations on tertiary thread
         //turn on flash
-        robot.queueTertiaryOperation(new CameraOperation(CameraOperation.CameraOperationType.FLASH_ON, "Turn on flash"));
+        //
+        //robot.queueTertiaryOperation(new CameraOperation(CameraOperation.CameraOperationType.FLASH_ON, "Turn on flash"));
         //lower foundation gripper so camera can see
         //robot.queueTertiaryOperation(new FoundationGripperOperation(FoundationGripperOperation.OperationType.LOWER, "Lower foundation gripper"));
 
         //queue following operations on primary thread
+
+/*
+        //get gripper to position to raise wobble goal
+        PickerOperation operationRaise = new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_LIFT,
+                "Raise gripper to lift wobble goal");
+        robot.queuePrimaryOperation(operationRaise);
 
         //get gripper to hover position
         PickerOperation operationHover = new PickerOperation(PickerOperation.PickerOperationType.HOVER,
@@ -139,37 +158,98 @@ public abstract class AutonomousHelper extends OpMode {
 
         //close gripper
         robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.CLOSE_GRIPPER, "Close gripper on wobble goal"));
-
-        //get gripper to position to raise wobble goal
-        PickerOperation operationRaise = new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_LIFT,
-                "Raise gripper to lift wobble goal");
-        robot.queuePrimaryOperation(operationRaise);
+*/
     }
 
     protected void queueRingDetermination() {
         match.setNumberOfRings(robot.getNumberOfRings());
     }
 
+    protected void queuedWobbleLift() {
+        robot.queuePrimaryOperation(
+                new PickerOperation(
+                        10f*Field.MM_PER_INCH*PickerArm.EXTENSION_ENCODER_COUNT_PER_MM,
+                        "Extend"));
+        robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.HOVER, "Carry"));
+        robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_LIFT, "Lift"));
+        robot.queuePrimaryOperation(new WaitOperation(1000, "Wait"));
+    }
+
     protected void queueWobbleGoalDeposit() {
-        double forwardMovement =0, rightMovement=0;
-        int numberOfRingsOnStack = match.getNumberOfRings();
-        if (numberOfRingsOnStack == 0) {
-            forwardMovement  = 2.5*Field.TILE_WIDTH;
-            rightMovement = 1*Field.TILE_WIDTH;
+
+        if (match.getStartingPosition() == Field.StartingPosition.LEFT) {
+            //we are starting from the left starting line
+            //scoot left to avoid rings
+            initialLeftMovement = .75*Field.TILE_WIDTH;
+            if (match.getAllianceColor() == RED) {
+                if (match.getNumberOfRings() == Field.RingCount.NONE) {
+                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                }
+                else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                }
+                else {
+                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                }
+            }
+            else {
+                if (match.getNumberOfRings() == Field.RingCount.NONE) {
+                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                }
+                else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                }
+                else {
+                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                }
+            }
         }
-        if (numberOfRingsOnStack == 1) {
-            forwardMovement  = 3.5*Field.TILE_WIDTH;
-            rightMovement = 0 * Field.TILE_WIDTH;
+        else {
+            //We are starting from the right starting line
+
+            //scoot right to avoid rings
+            initialLeftMovement = -.75*Field.TILE_WIDTH;
+            if (match.getAllianceColor() == RED) {
+                if (match.getNumberOfRings() == Field.RingCount.NONE) {
+                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                }
+                else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                }
+                else {
+                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                }
+            }
+            else {
+                if (match.getNumberOfRings() == Field.RingCount.NONE) {
+                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                }
+                else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                }
+                else {
+                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                }
+            }
         }
-        if (numberOfRingsOnStack == 4) {
-            forwardMovement  = 4.5*Field.TILE_WIDTH;
-            rightMovement = 1*Field.TILE_WIDTH;
+        if (match.getNumberOfRings() == Field.RingCount.NONE) {
+            forwardMovement = 2*Field.TILE_WIDTH;
+        }
+        else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+            forwardMovement = 3*Field.TILE_WIDTH;
+        }
+        else {
+            forwardMovement = 4*Field.TILE_WIDTH;
         }
 
+        robot.queuePrimaryOperation(new DriveForDistanceInDirectionOperation
+                (initialForwardMovement, 0, CAUTIOUS_SPEED, "Move forward to clear wall"));
+        robot.queuePrimaryOperation(new StrafeLeftForDistanceOperation
+                (initialLeftMovement, CAUTIOUS_SPEED, "Move to avoid rings"));
         robot.queuePrimaryOperation(
                 new DriveForDistanceOperation(forwardMovement, CAUTIOUS_SPEED, "Move to the right square"));
         robot.queuePrimaryOperation(
-                new StrafeLeftForDistanceOperation(-rightMovement, CAUTIOUS_SPEED, "strafe into the right box"));
+                new StrafeLeftForDistanceOperation(secondLeftMovement, CAUTIOUS_SPEED, "Strafe into the right box"));
 
         //lower gripper to position to deposit wobble goal
         PickerOperation operationLower = new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_POSITION,
@@ -194,19 +274,18 @@ public abstract class AutonomousHelper extends OpMode {
      * or the second based on where we were supposed to deposit the wobble goal.
      */
     protected void queueNavigation() {
-        double forwardMovement = 0;
-        int numberOfRingsOnStack = match.getNumberOfRings();
-        if (numberOfRingsOnStack == 0) {
-            forwardMovement = .15 * Field.TILE_WIDTH;
+        if (match.getNumberOfRings() == Field.RingCount.NONE) {
+            backwardsMovementToNavigate = 0.5*Field.TILE_WIDTH;
         }
-        if (numberOfRingsOnStack == 1) {
-            forwardMovement = .5 * Field.TILE_WIDTH;
+        else if (match.getNumberOfRings() == Field.RingCount.ONE) {
+            backwardsMovementToNavigate = 1.0*Field.TILE_WIDTH;
         }
-        if (numberOfRingsOnStack == 4) {
-            forwardMovement = 1.5 * Field.TILE_WIDTH;
+        else {
+            backwardsMovementToNavigate = 2.0*Field.TILE_WIDTH;
         }
+        robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.CLOSE_GRIPPER, "Close gripper"));
 
         robot.queuePrimaryOperation(
-                new DriveForDistanceOperation(-forwardMovement, CAUTIOUS_SPEED, "Navigate"));
+                new DriveForDistanceOperation(-backwardsMovementToNavigate, CAUTIOUS_SPEED, "Navigate"));
     }
 }

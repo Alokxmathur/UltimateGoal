@@ -22,16 +22,10 @@ public class Match {
     private Field field = null;
     private Date startTime = new Date();
     private Date teleopStartTime = new Date();
-    private int numberOfRings;
+    private Field.RingCount numberOfRings;
     private Alliance.Color allianceColor;
 
-    public int getNumberOfRings() {
-        return numberOfRings;
-    }
-
-    public void setNumberOfRings(int numberOfRings) {
-        this.numberOfRings = numberOfRings;
-    }
+    private Field.StartingPosition startingPosition;
 
     synchronized public static Match getNewInstance() {
         match = new Match();
@@ -123,5 +117,20 @@ public class Match {
 
     public Alliance.Color getAllianceColor() {
         return allianceColor;
+    }
+
+    public Field.RingCount getNumberOfRings() {
+        return numberOfRings;
+    }
+    public void setNumberOfRings(Field.RingCount numberOfRings) {
+        this.numberOfRings = numberOfRings;
+    }
+
+    public Field.StartingPosition getStartingPosition() {
+        return startingPosition;
+    }
+
+    public void setStartingPosition(Field.StartingPosition startingPosition) {
+        this.startingPosition = startingPosition;
     }
 }

@@ -78,12 +78,18 @@ public class WebCam {
 
     private RingDetector ringDetector;
 
-    public void init(HardwareMap hardwareMap, Telemetry telemetry, Alliance.Color allianceColor) {
+    public void init(HardwareMap hardwareMap, Telemetry telemetry, Field.StartingPosition startingPosition) {
         webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
         ledControl = hardwareMap.get(DcMotor.class, "LED");
         cameraServo = hardwareMap.get(Servo.class, "cameraServo");
         cameraServo.setPosition(0.51);
-        this.ringDetector = new RingDetector();
+        if (startingPosition == Field.StartingPosition.LEFT) {
+            this.ringDetector = new RingDetectorLeft();
+        }
+        else {
+            this.ringDetector = new RingDetectorRight();
+        }
+
         final int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId",
                 "id", hardwareMap.appContext.getPackageName());
         this.telemetry = telemetry;
@@ -294,14 +300,14 @@ public class WebCam {
      *
      * @return The position of the sky stone in the quarry
      */
-    public int getNumberOfRings() {
+    public Field.RingCount getNumberOfRings() {
         synchronized (ringDetector) {
             /*To access the image: we need to iterate through the images of the frame object:*/
             VuforiaLocalizer.CloseableFrame vuforiaFrame; //takes the frame at the head of the queue
             try {
                 //Match.log("Getting frame from vuForia");
                 vuforiaFrame = vuforiaLocalizer.getFrameQueue().take();
-                //Match.log("Got frame from vuForia");
+                Match.log("Got frame from vuForia");
                 Image image = null;
                 long numImages = vuforiaFrame.getNumImages();
                 for (int i = 0; i < numImages; i++) {
@@ -314,18 +320,18 @@ public class WebCam {
                 }//for
                 if (image == null) {
                     Match.log("Unable to get image from vuForia camera out of " + numImages);
-                    return 0;
+                    return Field.RingCount.NONE;
                 }
 
                 Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.RGB_565);
-                //Match.log(image.getWidth() + ": " + image.getHeight());
+                Match.log(image.getWidth() + ": " + image.getHeight());
                 bitmap.copyPixelsFromBuffer(image.getPixels());
                 return ringDetector.getNumberOfRings(bitmap);
             } catch (Exception e) {
                 Match.log("Exception " + e + " in finding number of rings");
             }
-            //default to 0
-            return 0;
+            //default to none
+            return Field.RingCount.NONE;
         }
     }
 

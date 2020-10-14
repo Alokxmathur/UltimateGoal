@@ -57,6 +57,7 @@ public class PickerArm {
 
     public static final int SHOULDER_INCREMENT = 10;
 
+    public static final int SHOULDER_INITIAL_POSITION = 100;
     public static final int SHOULDER_RELEASE_POSITION = 260;
     public static final int SHOULDER_LIFT_POSITION = 320;
     public static final int SHOULDER_VERTICAL_POSITION = (int) (Math.toRadians(70) * SHOULDER_ENCODER_COUNT_PER_RADIAN);
@@ -208,8 +209,9 @@ public class PickerArm {
 
     public boolean isComplete(PickerOperation operation) {
         switch (operation.getPickerOperationType()) {
-            case ARM_EXTENSION:
+            case ARM_EXTENSION: {
                 return winchWithinReach();
+            }
             case SHOULDER_GRAB:
             case SHOULDER_RELEASE:
             case SHOULDER_VERTICAL:
@@ -225,7 +227,6 @@ public class PickerArm {
                 return (new Date().getTime() - operation.getStartTime().getTime() > 300);
             }
             case INITIAL:
-            case CARRY:
             case HOVER:
             case EXTENSION_AND_SHOULDER_POSITION:
             case LEVEL_1:
@@ -269,7 +270,7 @@ public class PickerArm {
         switch (operation.getPickerOperationType()) {
             case INITIAL: {
                 this.setWinchPosition(0);
-                this.setShoulderPosition(0);
+                this.setShoulderPosition(SHOULDER_INITIAL_POSITION);
                 break;
             }
             case ARM_EXTENSION: {
@@ -355,14 +356,6 @@ public class PickerArm {
             }
             case GRAB: {
                 this.setShoulderPosition(SHOULDER_GRAB_POSITION);
-                break;
-            }
-            case UP: {
-                this.raiseVertically(Field.STONE_HEIGHT);
-                break;
-            }
-            case OUT: {
-                this.extendHorizontally(Field.STONE_WIDTH);
                 break;
             }
         }

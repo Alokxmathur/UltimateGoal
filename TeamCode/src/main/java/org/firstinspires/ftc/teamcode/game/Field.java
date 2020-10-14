@@ -18,14 +18,12 @@ public class Field {
     public static final double TILE_WIDTH = 24 * MM_PER_INCH;
     public static final double FIELD_WIDTH  = 6 * TILE_WIDTH;
 
-    public static final double STONE_LENGTH = 8 * Field.MM_PER_INCH;
-    public static final double STONE_WIDTH = 4 * MM_PER_INCH;
-    public static final double STONE_HEIGHT = 5 * MM_PER_INCH;
+    public enum RingCount {
+        ONE, NONE, FOUR
+    }
 
-    public static final double QUARRY_FROM_WALL = 2*TILE_WIDTH + STONE_WIDTH/2;
-
-    public enum SkyStonePosition {
-        TOP, MIDDLE, BOTTOM
+    public enum StartingPosition {
+        LEFT, RIGHT
     }
     public Field() {
     }

@@ -30,7 +30,7 @@ public class FillAndGo extends LinearOpMode {
         try {
             match.init();
             Robot robot = match.getRobot();
-            robot.init(hardwareMap, this.telemetry, match, Alliance.Color.BLUE);
+            robot.init(hardwareMap, this.telemetry, match);
 
             ArrayList<Operation> operations = new ArrayList<>();
             Date lastRecorded = new Date();

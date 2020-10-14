@@ -37,29 +37,35 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 import org.openftc.easyopencv.OpenCvWebcam;
 
-@TeleOp(name = "Phoebe: Ring Determination", group = "Phoebe")
 public class RingDetermination extends LinearOpMode {
-    OpenCvWebcam webcam;
+    OpenCvCamera webcam;
     RingDeterminationPipeline pipeline;
     public static Object synchronizer = new Object();
+
+    public RingDetermination() {
+        pipeline = new RingDeterminationPipeline();
+    }
+
+    public RingDetermination(int x, int y) {
+        pipeline = new RingDeterminationPipeline(x, y);
+    }
 
     @Override
     public void runOpMode() {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
-        pipeline = new RingDeterminationPipeline();
         webcam.setPipeline(pipeline);
 
         // We set the viewport policy to optimized view so the preview doesn't appear 90 deg
         // out when the RC activity is in portrait. We do our actual image processing assuming
         // landscape orientation, though.
-        webcam.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
+        //webcam.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
 
         webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
-                webcam.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+                webcam.startStreaming(800, 448, OpenCvCameraRotation.UPRIGHT);
             }
         });
 
@@ -102,6 +108,13 @@ public class RingDetermination extends LinearOpMode {
     }
 
     public static class RingDeterminationPipeline extends OpenCvPipeline {
+        public RingDeterminationPipeline() {
+
+        }
+        public RingDeterminationPipeline(int x, int y) {
+            rectangleBottomLeft.x = x;
+            rectangleBottomLeft.y = y;
+        }
         /*
          * An enum to define the number of rings
          */
@@ -121,13 +134,13 @@ public class RingDetermination extends LinearOpMode {
         /*
          * The core values which define the location and size of the rectangle
          */
-        static Point rectangleBottomLeft = new Point(180, 100);
+        static Point rectangleBottomLeft = new Point(124, 160);
 
-        static volatile int rectangleWidth = 35;
-        static volatile int rectangleHeight = 25;
+        static volatile int rectangleWidth = 90;
+        static volatile int rectangleHeight = 70;
 
-        int fourRingThreshold = 150;
-        int oneRingThreshold = 135;
+        int fourRingThreshold = 154;
+        int oneRingThreshold = 137;
 
         /*
          * Working variables
@@ -188,7 +201,7 @@ public class RingDetermination extends LinearOpMode {
 
         public String getRectangle() {
             synchronized (synchronizer) {
-                return "(" + rectangleBottomLeft.x + "," + rectangleBottomLeft + "), h:" + rectangleHeight + ", w:" + rectangleWidth;
+                return "(" + rectangleBottomLeft.x + "," + rectangleBottomLeft.y + "), h:" + rectangleHeight + ", w:" + rectangleWidth;
             }
         }
 

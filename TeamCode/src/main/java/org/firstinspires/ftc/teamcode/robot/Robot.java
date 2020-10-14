@@ -85,7 +85,7 @@ public class Robot {
      * Initialize our robot
      * We set our alliance and our starting position based on finding a VuMark
      */
-    public void init(HardwareMap hardwareMap, Telemetry telemetry, Match match, Alliance.Color allianceColor) {
+    public void init(HardwareMap hardwareMap, Telemetry telemetry, Match match) {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
         this.match = match;
@@ -103,7 +103,7 @@ public class Robot {
         //initialize our components
 
         initFoundatonGripper();
-        initCamera(allianceColor);
+        initCamera(match.getAllianceColor(), match.getStartingPosition());
         this.camera.turnLedOn();
         initDriveTrain();
         this.camera.turnLedOff();
@@ -151,12 +151,12 @@ public class Robot {
         this.phoebeColorSensor = new PhoebeColorSensor(hardwareMap, telemetry);
     }
 
-    public void initCamera(Alliance.Color allianceColor) {
+    public void initCamera(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
         //initialize camera
         telemetry.addData("Status", "Initializing VuForia, please wait");
         telemetry.update();
         this.camera = new WebCam();
-        this.camera.init(hardwareMap, telemetry, allianceColor);
+        this.camera.init(hardwareMap, telemetry, startingPosition);
     }
 
     /**
@@ -524,7 +524,6 @@ public class Robot {
                 this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.GRAB, "Position to grab stone"));
             }
             if (controller1.b) {
-                this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.CARRY, "Carry"));
                 this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.GRAB, "Position to grab stone"));
                 this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.CLOSE_GRIPPER, "Grab stone"));
                 this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_LEVEL, "Pick"));
@@ -593,7 +592,7 @@ public class Robot {
         this.foundationGripper.lowerGripper();
     }
 
-    public int getNumberOfRings() {
+    public Field.RingCount getNumberOfRings() {
         return this.camera.getNumberOfRings();
     }
 

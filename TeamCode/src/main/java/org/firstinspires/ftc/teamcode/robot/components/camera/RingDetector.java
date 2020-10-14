@@ -1,122 +1,106 @@
+/*
+ * Copyright (c) 2020 OpenFTC Team
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.firstinspires.ftc.teamcode.robot.components.camera;
 
 import android.graphics.Bitmap;
 
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.game.Match;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvPipeline;
 
 public class RingDetector {
-    double ONE_DISK_AREA = 150;
-    // Lower and Upper bounds for range checking in HSV color space
-    private Scalar mLowerBound = new Scalar(0);
-    private Scalar mUpperBound = new Scalar(0);
-    // Color radius for range checking in HSV color space
-    private Scalar mColorRadius = new Scalar(12.5,25,25,0);
-    MatOfPoint largestContour = null;
-    double contourArea = 0;
-    int minY = 9999, minX = 9999;
-    int maxY = 0, maxX = 0;
-
-    // Cache
-    Mat mPyrDownMat = new Mat();
-    Mat mHsvMat = new Mat();
-    Mat mMask = new Mat();
-    Mat mDilatedMask = new Mat();
-    Mat mHierarchy = new Mat();
-    Mat inputMat = new Mat();
-
     public RingDetector() {
-        this(new Scalar(18, 250, 208));
     }
 
-    public RingDetector(Scalar ringColor) {
-        setHsvColor(ringColor);
+    public RingDetector(int x, int y) {
+        rectangleBottomLeft.x = x;
+        rectangleBottomLeft.y = y;
     }
 
-    public void setHsvColor(Scalar hsvColor) {
-        double minH = (hsvColor.val[0] >= mColorRadius.val[0]) ? hsvColor.val[0]-mColorRadius.val[0] : 0;
-        double maxH = (hsvColor.val[0]+mColorRadius.val[0] <= 255) ? hsvColor.val[0]+mColorRadius.val[0] : 255;
-
-        mLowerBound.val[0] = minH;
-        mUpperBound.val[0] = maxH;
-
-        mLowerBound.val[1] = hsvColor.val[1] - mColorRadius.val[1];
-        mUpperBound.val[1] = hsvColor.val[1] + mColorRadius.val[1];
-
-        mLowerBound.val[2] = hsvColor.val[2] - mColorRadius.val[2];
-        mUpperBound.val[2] = hsvColor.val[2] + mColorRadius.val[2];
-
-        mLowerBound.val[3] = 0;
-        mUpperBound.val[3] = 255;
-    }
-
-    public void process(Bitmap bitMap) {
-        Utils.bitmapToMat(bitMap, inputMat);
-        Imgproc.pyrDown(inputMat, mPyrDownMat);
-        Imgproc.pyrDown(mPyrDownMat, mPyrDownMat);
-
-        Imgproc.cvtColor(mPyrDownMat, mHsvMat, Imgproc.COLOR_RGB2HSV_FULL);
-
-        Core.inRange(mHsvMat, mLowerBound, mUpperBound, mMask);
-        Imgproc.dilate(mMask, mDilatedMask, new Mat());
-
-        List<MatOfPoint> contoursFound = new ArrayList<>();
-        Imgproc.findContours(mDilatedMask, contoursFound, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        minX = minY = 9999;
-        maxX = maxY = 0;
-        contourArea = 0;
-        for (MatOfPoint contour: contoursFound) {
-            double area = Imgproc.contourArea(contour);
-            if (area > this.contourArea) {
-                this.contourArea = area;
-                largestContour = contour;
-                Core.multiply(contour, new Scalar(4,4), contour);
-                Rect boundingRectangle = Imgproc.boundingRect(contour);
-                minX = boundingRectangle.x;
-                maxX = boundingRectangle.x + boundingRectangle.width;
-                minY = boundingRectangle.y;
-                maxY = boundingRectangle.y + boundingRectangle.height;
-            }
-        }
-    }
-
-    /**
-     * Returns the number of rings seen on the launch stack
-     * The determination is based upon the height of the stack seen.
-     * The team uses our ColorBlobDetection app to determine the thresholds for the
-     * hue, saturation and value readings for seeing the orange disks
-     * @param bitMap: the bitmap of the camera image
-     * @return number of rings seen
+    /*
+     * The core values which define the location and size of the rectangle
      */
-    public int getNumberOfRings(Bitmap bitMap) {
-        Match.log("Rings height=" + getHeight() + ", area: " + contourArea);
-        process(bitMap);
-        if (contourArea == 0) {
-            return 0;
-        }
-        else if (getArea() >= ONE_DISK_AREA) {
-            return 4;
-        }
-        else {
-            return 1;
-        }
-    }
+    static Point rectangleBottomLeft = new Point(124, 160);
 
-    public double getHeight() {
-        return maxY - minY;
+    static volatile int rectangleWidth = 52;
+    static volatile int rectangleHeight = 91;
+
+    int fourRingThreshold = 154;
+    int oneRingThreshold = 137;
+
+    /*
+     * Working variables
+     */
+    Mat inputMat = new Mat();
+    Mat rectangle_Cb;
+    Mat YCrCb = new Mat();
+    Mat Cb = new Mat();
+    int redAverage;
+
+    /*
+     * This function takes the RGB frame, converts to YCrCb,
+     * and extracts the Cb channel to the 'Cb' variable
+     *
+     * It then extracts the rectangle from the Cb variable and finds the average red value in it
+     */
+    public Field.RingCount getNumberOfRings(Bitmap inputBitmap) {
+        Utils.bitmapToMat(inputBitmap, inputMat);
+        Imgproc.cvtColor(inputMat, YCrCb, Imgproc.COLOR_RGB2YCrCb);
+        Core.extractChannel(YCrCb, Cb, 1);
+        rectangle_Cb = Cb.submat(new Rect(
+                new Point(rectangleBottomLeft.x, rectangleBottomLeft.y),
+                new Point(rectangleBottomLeft.x + rectangleWidth, rectangleBottomLeft.y + rectangleHeight)));
+        redAverage = (int) Core.mean(rectangle_Cb).val[0];
+        Imgproc.rectangle(
+                inputMat, // Buffer to draw on
+                new Point(rectangleBottomLeft.x, rectangleBottomLeft.y), // First point which defines the rectangle
+                new Point(rectangleBottomLeft.x + rectangleWidth, rectangleBottomLeft.y + rectangleHeight), // Second point which defines the rectangle
+                new Scalar(255, 0, 0), // The color the rectangle is drawn in
+                2); // Thickness of the rectangle lines
+
+        Field.RingCount ringCount = Field.RingCount.FOUR; // Record our analysis
+        if (redAverage > fourRingThreshold) {
+            ringCount = Field.RingCount.FOUR;
+        } else if (redAverage > oneRingThreshold) {
+            ringCount = Field.RingCount.ONE;
+        } else {
+            ringCount = Field.RingCount.NONE;
+        }
+        Match.log("Average red count=" + redAverage);
+
+        return ringCount;
+
     }
-    public double getWidth() {
-        return maxX - minX;
-    }
-    public double getArea() { return contourArea;}
 }
