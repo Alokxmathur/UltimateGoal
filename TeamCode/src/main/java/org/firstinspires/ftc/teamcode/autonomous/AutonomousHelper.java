@@ -7,22 +7,12 @@ import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.components.PickerArm;
-import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
-import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirectionOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.FoundationGripperOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.GyroscopicBearingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.PickerOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceWithHeadingOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForTimeOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.WaitOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.WaitUntilVuMarkOperation;
 
-import java.util.Locale;
-
-import static org.firstinspires.ftc.teamcode.game.Alliance.Color.BLUE;
 import static org.firstinspires.ftc.teamcode.game.Alliance.Color.RED;
 
 public abstract class AutonomousHelper extends OpMode {
@@ -42,9 +32,10 @@ public abstract class AutonomousHelper extends OpMode {
 
     double initialForwardMovement = .5*Field.TILE_WIDTH,
             initialLeftMovement = 0,
-            forwardMovement=0,
+            secondForwardMovement =0,
             secondLeftMovement=0,
-            backwardsMovementToNavigate = 0;
+            backwardsMovementToNavigate = 0,
+            leftMovementToNavigate;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -180,16 +171,16 @@ public abstract class AutonomousHelper extends OpMode {
         if (match.getStartingPosition() == Field.StartingPosition.LEFT) {
             //we are starting from the left starting line
             //scoot left to avoid rings
-            initialLeftMovement = .75*Field.TILE_WIDTH;
+            initialLeftMovement = .5*Field.TILE_WIDTH;
             if (match.getAllianceColor() == RED) {
                 if (match.getNumberOfRings() == Field.RingCount.NONE) {
-                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = -2*Field.TILE_WIDTH;
                 }
                 else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = -1*Field.TILE_WIDTH;
                 }
                 else {
-                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = -2*Field.TILE_WIDTH;
                 }
             }
             else {
@@ -197,7 +188,7 @@ public abstract class AutonomousHelper extends OpMode {
                     secondLeftMovement = 0*Field.TILE_WIDTH;
                 }
                 else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-                    secondLeftMovement = -1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = -1*Field.TILE_WIDTH;
                 }
                 else {
                     secondLeftMovement = 0*Field.TILE_WIDTH;
@@ -208,13 +199,13 @@ public abstract class AutonomousHelper extends OpMode {
             //We are starting from the right starting line
 
             //scoot right to avoid rings
-            initialLeftMovement = -.75*Field.TILE_WIDTH;
+            initialLeftMovement = -.5*Field.TILE_WIDTH;
             if (match.getAllianceColor() == RED) {
                 if (match.getNumberOfRings() == Field.RingCount.NONE) {
                     secondLeftMovement = 0*Field.TILE_WIDTH;
                 }
                 else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = 1*Field.TILE_WIDTH;
                 }
                 else {
                     secondLeftMovement = 0*Field.TILE_WIDTH;
@@ -222,24 +213,35 @@ public abstract class AutonomousHelper extends OpMode {
             }
             else {
                 if (match.getNumberOfRings() == Field.RingCount.NONE) {
-                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = 2*Field.TILE_WIDTH;
                 }
                 else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-                    secondLeftMovement = 0*Field.TILE_WIDTH;
+                    secondLeftMovement = 1*Field.TILE_WIDTH;
                 }
                 else {
-                    secondLeftMovement = 1.5*Field.TILE_WIDTH;
+                    secondLeftMovement = 2*Field.TILE_WIDTH;
                 }
             }
         }
         if (match.getNumberOfRings() == Field.RingCount.NONE) {
-            forwardMovement = 2*Field.TILE_WIDTH;
+            secondForwardMovement = 2*Field.TILE_WIDTH;
+            backwardsMovementToNavigate = 0;
+            if (match.getAllianceColor() == RED) {
+                leftMovementToNavigate = 1*Field.TILE_WIDTH;
+            }
+            else {
+                leftMovementToNavigate = -1*Field.TILE_WIDTH;
+            }
         }
         else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-            forwardMovement = 3*Field.TILE_WIDTH;
+            secondForwardMovement = 3*Field.TILE_WIDTH;
+            backwardsMovementToNavigate = 1*Field.TILE_WIDTH;
+            leftMovementToNavigate = 0;
         }
         else {
-            forwardMovement = 4*Field.TILE_WIDTH;
+            secondForwardMovement = 4*Field.TILE_WIDTH;
+            backwardsMovementToNavigate = 2*Field.TILE_WIDTH;
+            leftMovementToNavigate = 0;
         }
 
         robot.queuePrimaryOperation(new DriveForDistanceInDirectionOperation
@@ -247,7 +249,7 @@ public abstract class AutonomousHelper extends OpMode {
         robot.queuePrimaryOperation(new StrafeLeftForDistanceOperation
                 (initialLeftMovement, CAUTIOUS_SPEED, "Move to avoid rings"));
         robot.queuePrimaryOperation(
-                new DriveForDistanceOperation(forwardMovement, CAUTIOUS_SPEED, "Move to the right square"));
+                new DriveForDistanceOperation(secondForwardMovement, CAUTIOUS_SPEED, "Move to the right square"));
         robot.queuePrimaryOperation(
                 new StrafeLeftForDistanceOperation(secondLeftMovement, CAUTIOUS_SPEED, "Strafe into the right box"));
 
@@ -274,18 +276,11 @@ public abstract class AutonomousHelper extends OpMode {
      * or the second based on where we were supposed to deposit the wobble goal.
      */
     protected void queueNavigation() {
-        if (match.getNumberOfRings() == Field.RingCount.NONE) {
-            backwardsMovementToNavigate = 0.5*Field.TILE_WIDTH;
-        }
-        else if (match.getNumberOfRings() == Field.RingCount.ONE) {
-            backwardsMovementToNavigate = 1.0*Field.TILE_WIDTH;
-        }
-        else {
-            backwardsMovementToNavigate = 2.0*Field.TILE_WIDTH;
-        }
         robot.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.CLOSE_GRIPPER, "Close gripper"));
 
         robot.queuePrimaryOperation(
-                new DriveForDistanceOperation(-backwardsMovementToNavigate, CAUTIOUS_SPEED, "Navigate"));
+                new DriveForDistanceOperation(-backwardsMovementToNavigate, CAUTIOUS_SPEED, "Move back Navigate"));
+        robot.queuePrimaryOperation(
+                new StrafeLeftForDistanceOperation(leftMovementToNavigate, CAUTIOUS_SPEED, "Strafe to Navigate"));
     }
 }

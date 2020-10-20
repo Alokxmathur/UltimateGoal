@@ -39,6 +39,6 @@ import org.openftc.easyopencv.OpenCvPipeline;
 @TeleOp(name = "Phoebe: Rings Left", group = "Phoebe")
 public class RingDeterminationLeft extends RingDetermination {
     public RingDeterminationLeft() {
-        super(310, 220);
+        super(308, 229);
     }
 }

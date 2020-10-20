@@ -26,6 +26,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @TeleOp(name = "Phoebe: Rings Right", group = "Phoebe")
 public class RingDeterminationRight extends RingDetermination {
     public RingDeterminationRight() {
-        super(500, 220);
+        super(490, 220);
     }
 }

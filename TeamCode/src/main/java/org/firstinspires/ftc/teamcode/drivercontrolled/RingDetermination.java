@@ -136,8 +136,8 @@ public class RingDetermination extends LinearOpMode {
          */
         static Point rectangleBottomLeft = new Point(124, 160);
 
-        static volatile int rectangleWidth = 90;
         static volatile int rectangleHeight = 70;
+        static volatile int rectangleWidth = 90;
 
         int fourRingThreshold = 154;
         int oneRingThreshold = 137;
@@ -178,7 +178,7 @@ public class RingDetermination extends LinearOpMode {
                         new Point(rectangleBottomLeft.x, rectangleBottomLeft.y), // First point which defines the rectangle
                         new Point(rectangleBottomLeft.x + rectangleWidth, rectangleBottomLeft.y + rectangleHeight), // Second point which defines the rectangle
                         BLUE, // The color the rectangle is drawn in
-                        2); // Thickness of the rectangle lines
+                        -1); // Thickness of the rectangle lines
 
                 ringCount = RingCount.FOUR; // Record our analysis
                 if (redAverage > fourRingThreshold) {

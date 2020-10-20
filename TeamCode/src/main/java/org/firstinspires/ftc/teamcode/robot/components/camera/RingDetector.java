@@ -52,10 +52,10 @@ public class RingDetector {
     /*
      * The core values which define the location and size of the rectangle
      */
-    static Point rectangleBottomLeft = new Point(124, 160);
+    static Point rectangleBottomLeft = new Point(0, 0);
 
-    static volatile int rectangleWidth = 52;
-    static volatile int rectangleHeight = 91;
+    static volatile int rectangleHeight = 70;
+    static volatile int rectangleWidth = 90;
 
     int fourRingThreshold = 154;
     int oneRingThreshold = 137;
