@@ -7,14 +7,15 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.robot.components.imu.IMU;
+import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirectionOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.DriveForTimeOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilColorOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilVuMarkOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.FollowTrajectory;
 import org.firstinspires.ftc.teamcode.robot.operations.GyroscopicBearingOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.DriveForTimeOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceWithHeadingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForTimeOperation;
@@ -29,7 +30,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 public class MecanumDriveTrain {
     //Define constants that help us move appropriate inches based on our drive configuration
-    public static final double     COUNTS_PER_MOTOR_REV    = 560 ;    // eg: Rev 20:1 Motor Encoder
+    public static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;    // eg: Rev 20:1 Motor Encoder
     //public static final double     COUNTS_PER_MOTOR_REV    = 1120 ;    // eg: Rev 40:1 Motor Encoder
     //public static final double     COUNTS_PER_MOTOR_REV    = 280 ;    // eg: Rev Hex Motor Encoder
     private static final double     WHEEL_RADIUS   = 50;     // For figuring circumference (mm)
@@ -56,8 +57,6 @@ public class MecanumDriveTrain {
     private HardwareMap hardwareMap;
 
     public MecanumDriveTrain(HardwareMap hardwareMap, Telemetry telemetry) {
-        super();
-
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
         // Define and Initialize Motors
@@ -124,6 +123,10 @@ public class MecanumDriveTrain {
 
     public void handleOperation(DriveForTimeOperation operation) {
         stop();
+    }
+
+    public void handleOperation(FollowTrajectory trajectoryOperation) {
+
     }
 
     /**

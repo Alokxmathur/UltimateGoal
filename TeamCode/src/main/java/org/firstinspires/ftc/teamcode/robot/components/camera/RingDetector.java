@@ -21,24 +21,14 @@
 
 package org.firstinspires.ftc.teamcode.robot.components.camera;
 
-import android.graphics.Bitmap;
-
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.game.Match;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-import org.openftc.easyopencv.OpenCvCamera;
-import org.openftc.easyopencv.OpenCvCameraFactory;
-import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvPipeline;
 
 public class RingDetector {
     public RingDetector() {
@@ -57,13 +47,12 @@ public class RingDetector {
     static volatile int rectangleHeight = 70;
     static volatile int rectangleWidth = 90;
 
-    int fourRingThreshold = 154;
+    int fourRingThreshold = 150;
     int oneRingThreshold = 137;
 
     /*
      * Working variables
      */
-    Mat inputMat = new Mat();
     Mat rectangle_Cb;
     Mat YCrCb = new Mat();
     Mat Cb = new Mat();
@@ -75,8 +64,7 @@ public class RingDetector {
      *
      * It then extracts the rectangle from the Cb variable and finds the average red value in it
      */
-    public Field.RingCount getNumberOfRings(Bitmap inputBitmap) {
-        Utils.bitmapToMat(inputBitmap, inputMat);
+    public Field.RingCount getNumberOfRings(Mat inputMat) {
         Imgproc.cvtColor(inputMat, YCrCb, Imgproc.COLOR_RGB2YCrCb);
         Core.extractChannel(YCrCb, Cb, 1);
         rectangle_Cb = Cb.submat(new Rect(

@@ -37,7 +37,7 @@ public class OpenCloseGripper extends LinearOpMode {
              telemetry.addData("Ready:", "Press run to close gripper");
              telemetry.update();
              waitForStart();
-             robot.initPickerArm();
+             robot.initPickerArm(telemetry);
          }
          catch (Throwable e) {
             StringWriter stringWriter = new StringWriter();

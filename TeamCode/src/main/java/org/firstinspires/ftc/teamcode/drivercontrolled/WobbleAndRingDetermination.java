@@ -22,11 +22,14 @@
 package org.firstinspires.ftc.teamcode.drivercontrolled;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.game.Field;
+import org.firstinspires.ftc.teamcode.robot.components.camera.WobbleDetector;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -35,26 +38,23 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
-import org.openftc.easyopencv.OpenCvWebcam;
 
-public class RingDetermination extends LinearOpMode {
+import java.util.ArrayList;
+
+public class WobbleAndRingDetermination extends LinearOpMode {
     OpenCvCamera webcam;
-    RingDeterminationPipeline pipeline;
-    public static Object synchronizer = new Object();
+    WobbleAndRingDeterminationPipeline pipeline;
+    public static final Object synchronizer = new Object();
 
-    public RingDetermination() {
-        pipeline = new RingDeterminationPipeline();
-    }
-
-    public RingDetermination(int x, int y) {
-        pipeline = new RingDeterminationPipeline(x, y);
+    public WobbleAndRingDetermination(int x, int y) {
+        pipeline = new WobbleAndRingDeterminationPipeline(x, y);
     }
 
     @Override
     public void runOpMode() {
-
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
+        pipeline.setTelemetry(telemetry);
         webcam.setPipeline(pipeline);
 
         // We set the viewport policy to optimized view so the preview doesn't appear 90 deg
@@ -62,12 +62,7 @@ public class RingDetermination extends LinearOpMode {
         // landscape orientation, though.
         //webcam.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
 
-        webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
-            @Override
-            public void onOpened() {
-                webcam.startStreaming(800, 448, OpenCvCameraRotation.UPRIGHT);
-            }
-        });
+        webcam.openCameraDeviceAsync(() -> webcam.startStreaming(800, 448, OpenCvCameraRotation.UPRIGHT));
 
         waitForStart();
 
@@ -107,21 +102,16 @@ public class RingDetermination extends LinearOpMode {
         }
     }
 
-    public static class RingDeterminationPipeline extends OpenCvPipeline {
-        public RingDeterminationPipeline() {
-
+    public static class WobbleAndRingDeterminationPipeline extends OpenCvPipeline {
+        //the color of the black part of the wobble goal
+        Scalar wobbleBaseColor = new Scalar(0);
+        Telemetry telemetry;
+        public WobbleAndRingDeterminationPipeline(int x, int y) {
+            ringStackBottomLeft.x = x;
+            ringStackBottomLeft.y = y;
         }
-        public RingDeterminationPipeline(int x, int y) {
-            rectangleBottomLeft.x = x;
-            rectangleBottomLeft.y = y;
-        }
-        /*
-         * An enum to define the number of rings
-         */
-        public enum RingCount {
-            FOUR,
-            ONE,
-            NONE
+        public void setTelemetry(Telemetry telemetry) {
+            this.telemetry = telemetry;
         }
 
         /*
@@ -134,7 +124,7 @@ public class RingDetermination extends LinearOpMode {
         /*
          * The core values which define the location and size of the rectangle
          */
-        static Point rectangleBottomLeft = new Point(124, 160);
+        static Point ringStackBottomLeft = new Point(124, 160);
 
         static volatile int rectangleHeight = 70;
         static volatile int rectangleWidth = 90;
@@ -151,7 +141,9 @@ public class RingDetermination extends LinearOpMode {
         int redAverage;
 
         // Volatile since accessed by OpMode thread w/o synchronization
-        private volatile RingCount ringCount = RingCount.FOUR;
+        private volatile Field.RingCount ringCount = Field.RingCount.FOUR;
+
+        private WobbleDetector wobbleDetector = new WobbleDetector(new Scalar(0));
 
         /*
          * This function takes the RGB frame, converts to YCrCb,
@@ -163,8 +155,8 @@ public class RingDetermination extends LinearOpMode {
             Imgproc.cvtColor(input, YCrCb, Imgproc.COLOR_RGB2YCrCb);
             Core.extractChannel(YCrCb, Cb, 1);
             rectangle_Cb = Cb.submat(new Rect(
-                    new Point(rectangleBottomLeft.x, rectangleBottomLeft.y),
-                    new Point(rectangleBottomLeft.x + rectangleWidth, rectangleBottomLeft.y + rectangleHeight)));
+                    new Point(ringStackBottomLeft.x, ringStackBottomLeft.y),
+                    new Point(ringStackBottomLeft.x + rectangleWidth, ringStackBottomLeft.y + rectangleHeight)));
             redAverage = (int) Core.mean(rectangle_Cb).val[0];
         }
 
@@ -175,18 +167,35 @@ public class RingDetermination extends LinearOpMode {
                 processInput(input);
                 Imgproc.rectangle(
                         input, // Buffer to draw on
-                        new Point(rectangleBottomLeft.x, rectangleBottomLeft.y), // First point which defines the rectangle
-                        new Point(rectangleBottomLeft.x + rectangleWidth, rectangleBottomLeft.y + rectangleHeight), // Second point which defines the rectangle
+                        new Point(ringStackBottomLeft.x, ringStackBottomLeft.y), // First point which defines the rectangle
+                        new Point(ringStackBottomLeft.x + rectangleWidth, ringStackBottomLeft.y + rectangleHeight), // Second point which defines the rectangle
                         BLUE, // The color the rectangle is drawn in
                         -1); // Thickness of the rectangle lines
+                MatOfPoint wobbleContour = wobbleDetector.process(input);
+                if (wobbleContour != null) {
+                    ArrayList<MatOfPoint> contours = new ArrayList<>();
+                    contours.add(wobbleDetector.process(input));
+                    Imgproc.drawContours(input, contours, -1, RED, -1);
+                }
+                Imgproc.putText(input, "" + wobbleDetector.getBounds(), new Point(4, 50),
+                        Imgproc.FONT_HERSHEY_COMPLEX, 1, wobbleBaseColor, 4);
+                Imgproc.putText(input, "Area: " + wobbleDetector.getLargestArea(), new Point(4, 100),
+                        Imgproc.FONT_HERSHEY_COMPLEX, 1, wobbleBaseColor, 4);
+                Imgproc.putText(input, "x:" + wobbleDetector.getMinX() + "-" + wobbleDetector.getMaxX(), new Point(4, 150),
+                        Imgproc.FONT_HERSHEY_COMPLEX, 1, wobbleBaseColor, 4);
+                Imgproc.putText(input, "y:" + wobbleDetector.getMinY() + "-" + wobbleDetector.getMaxY(), new Point(4, 200),
+                        Imgproc.FONT_HERSHEY_COMPLEX, 1, wobbleBaseColor, 4);
+                telemetry.addData("Wobble","A:" + wobbleDetector.getLargestArea() + "x:" + wobbleDetector.getAverageX()
+                    + "y:" + wobbleDetector.getAverageY());
+                telemetry.update();
 
-                ringCount = RingCount.FOUR; // Record our analysis
+                ringCount = Field.RingCount.FOUR; // Record our analysis
                 if (redAverage > fourRingThreshold) {
-                    ringCount = RingCount.FOUR;
+                    ringCount = Field.RingCount.FOUR;
                 } else if (redAverage > oneRingThreshold) {
-                    ringCount = RingCount.ONE;
+                    ringCount = Field.RingCount.ONE;
                 } else {
-                    ringCount = RingCount.NONE;
+                    ringCount = Field.RingCount.NONE;
                 }
 
                 return input;
@@ -201,7 +210,7 @@ public class RingDetermination extends LinearOpMode {
 
         public String getRectangle() {
             synchronized (synchronizer) {
-                return "(" + rectangleBottomLeft.x + "," + rectangleBottomLeft.y + "), h:" + rectangleHeight + ", w:" + rectangleWidth;
+                return "(" + ringStackBottomLeft.x + "," + ringStackBottomLeft.y + "), h:" + rectangleHeight + ", w:" + rectangleWidth;
             }
         }
 
@@ -231,25 +240,25 @@ public class RingDetermination extends LinearOpMode {
 
         public void moveUp() {
             synchronized (synchronizer) {
-                rectangleBottomLeft.y++;
+                ringStackBottomLeft.y++;
             }
         }
 
         public void moveDown() {
             synchronized (synchronizer) {
-                rectangleBottomLeft.y--;
+                ringStackBottomLeft.y--;
             }
         }
 
         public void moveLeft() {
             synchronized (synchronizer) {
-                rectangleBottomLeft.x--;
+                ringStackBottomLeft.x--;
             }
         }
 
         public void moveRight() {
             synchronized (synchronizer) {
-                rectangleBottomLeft.x++;
+                ringStackBottomLeft.x++;
             }
         }
     }

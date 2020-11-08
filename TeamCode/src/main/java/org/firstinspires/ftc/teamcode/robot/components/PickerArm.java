@@ -62,7 +62,7 @@ public class PickerArm {
     public static final int SHOULDER_LIFT_POSITION = 320;
     public static final int SHOULDER_VERTICAL_POSITION = (int) (Math.toRadians(70) * SHOULDER_ENCODER_COUNT_PER_RADIAN);
     public static final int SHOULDER_LEVEL_POSITION = 0;
-    public static final int SHOULDER_GRAB_POSITION = 100;
+    public static final int SHOULDER_GRAB_POSITION = 80;
 
     public static final double HOVER_EXTENSION = 1600;
 
@@ -71,17 +71,17 @@ public class PickerArm {
 
 
     //These numbers are for the first set of protrusions
-    public static final int LEVEL_1_SHOULDER = -10;
-    public static final int LEVEL_1_WINCH = 1407;
+    public static final int LEVEL_1_SHOULDER = 310;
+    public static final int LEVEL_1_WINCH = 1045;
 
-    public static final int LEVEL_2_SHOULDER = 80;
-    public static final int LEVEL_2_WINCH = 1544;
+    public static final int LEVEL_2_SHOULDER = 120;
+    public static final int LEVEL_2_WINCH = 1045;
 
-    public static final int LEVEL_3_SHOULDER = 220;
-    public static final int LEVEL_3_WINCH = 1760;
+    public static final int LEVEL_3_SHOULDER = 580;
+    public static final int LEVEL_3_WINCH = 1660;
 
-    public static final int LEVEL_4_SHOULDER = 270;
-    public static final int LEVEL_4_WINCH = 1880;
+    public static final int LEVEL_4_SHOULDER = 380;
+    public static final int LEVEL_4_WINCH = 3000;
 
     public static final int LEVEL_5_SHOULDER = 310;
     public static final int LEVEL_5_WINCH = 2272;

@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirecti
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilColorOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilVuMarkOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.FollowTrajectory;
 import org.firstinspires.ftc.teamcode.robot.operations.FoundationGripperOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.GyroscopicBearingOperation;
@@ -102,14 +103,13 @@ public class Robot {
 
         //initialize our components
 
-        initFoundatonGripper();
+        initFoundationGripper();
         initCamera(match.getAllianceColor(), match.getStartingPosition());
         this.camera.turnLedOn();
         initDriveTrain();
         this.camera.turnLedOff();
-        initPickerArm();
+        initPickerArm(telemetry);
         this.camera.turnLedOn();
-        initSideGrippers();
         this.camera.turnLedOff();
         //initColorSensor();
         //initRealSenseCamera();
@@ -125,24 +125,16 @@ public class Robot {
         this.mecanumDriveTrain = new MecanumDriveTrain(hardwareMap, telemetry);
     }
 
-    public void initPickerArm() {
+    public void initPickerArm(Telemetry telemetry) {
         telemetry.addData("Status", "Initializing picker arm, please wait");
         telemetry.update();
         this.pickerArm = new PickerArm(hardwareMap, telemetry);
     }
 
-    public void initFoundatonGripper() {
+    public void initFoundationGripper() {
         telemetry.addData("Status","Initializing foundation gripper, please wait");
         telemetry.update();
         this.foundationGripper = new FoundationGripper(hardwareMap, telemetry);
-    }
-
-    public void initSideGrippers() {
-        telemetry.addData("Status","Initializing side grippers, please wait");
-        telemetry.update();
-        this.sideGrippers = new SideGrippers(hardwareMap, telemetry);
-        this.sideGrippers.raiseLeftGripper();
-        this.sideGrippers.raiseRightGripper();
     }
 
     public void initColorSensor() {
@@ -190,6 +182,10 @@ public class Robot {
      */
     public boolean operationCompleted(Operation operation) {
         switch (operation.getType()) {
+            case FOLLOW_TRAJECTORY: {
+                FollowTrajectory followTrajectoryOperation = (FollowTrajectory) operation;
+                return followTrajectoryOperation.isComplete(mecanumDriveTrain);
+            }
             case DRIVE_FOR_DISTANCE: {
                 DriveForDistanceOperation driveForDistanceOperation = (DriveForDistanceOperation) operation;
                 return driveForDistanceOperation.isComplete(mecanumDriveTrain);
@@ -276,6 +272,9 @@ public class Robot {
      */
     public void executeOperation(Operation operation) {
         switch (operation.getType()) {
+            case FOLLOW_TRAJECTORY: {
+                this.mecanumDriveTrain.handleOperation((FollowTrajectory) operation);
+            }
             case DRIVE_FOR_DISTANCE: {
                 this.mecanumDriveTrain.handleOperation((DriveForDistanceOperation) operation);
                 break;

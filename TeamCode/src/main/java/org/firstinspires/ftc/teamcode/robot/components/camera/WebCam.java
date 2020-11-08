@@ -18,9 +18,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-import org.firstinspires.ftc.teamcode.game.Alliance;
 import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.game.Match;
+import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 
 import java.util.ArrayList;
 
@@ -29,8 +32,6 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.ZYX;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
-
-import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
 
 
 /**
@@ -55,6 +56,7 @@ public class WebCam {
     Telemetry telemetry;
     HardwareMap hardwareMap;
     OpenGLMatrix vuforiaCameraFromRobot;
+    Mat inputMat = new Mat();
     OpenGLMatrix lastLocation = new OpenGLMatrix();
     VuforiaTrackables targetsUltimateGoal;
     ArrayList<VuforiaTrackable> allTrackables = new ArrayList<>();
@@ -77,6 +79,7 @@ public class WebCam {
     DcMotor ledControl;
 
     private RingDetector ringDetector;
+    private WobbleDetector wobbleDetector;
 
     public void init(HardwareMap hardwareMap, Telemetry telemetry, Field.StartingPosition startingPosition) {
         webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
@@ -89,6 +92,7 @@ public class WebCam {
         else {
             this.ringDetector = new RingDetectorRight();
         }
+        this.wobbleDetector = new WobbleDetector(new Scalar(0));
 
         final int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId",
                 "id", hardwareMap.appContext.getPackageName());
@@ -296,9 +300,9 @@ public class WebCam {
 
 
     /**
-     * attempt to find sky stone location
+     * attempt to find number of rings on starter stack
      *
-     * @return The position of the sky stone in the quarry
+     * @return The number of rings on the starter stack
      */
     public Field.RingCount getNumberOfRings() {
         synchronized (ringDetector) {
@@ -324,11 +328,14 @@ public class WebCam {
                 }
 
                 Bitmap bitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.RGB_565);
-                Match.log(image.getWidth() + ": " + image.getHeight());
                 bitmap.copyPixelsFromBuffer(image.getPixels());
-                return ringDetector.getNumberOfRings(bitmap);
+                Utils.bitmapToMat(bitmap, inputMat);
+                Field.RingCount numberOfRings = ringDetector.getNumberOfRings(inputMat);
+                //wobbleDetector.process(inputMat);
+                return numberOfRings;
             } catch (Exception e) {
                 Match.log("Exception " + e + " in finding number of rings");
+                e.printStackTrace();
             }
             //default to none
             return Field.RingCount.NONE;

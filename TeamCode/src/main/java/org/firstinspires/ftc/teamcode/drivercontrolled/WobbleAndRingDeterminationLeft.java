@@ -23,9 +23,9 @@ package org.firstinspires.ftc.teamcode.drivercontrolled;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name = "Phoebe: Rings Right", group = "Phoebe")
-public class RingDeterminationRight extends RingDetermination {
-    public RingDeterminationRight() {
-        super(490, 220);
+@TeleOp(name = "Phoebe: Wobble+RingsLeft", group = "Phoebe")
+public class WobbleAndRingDeterminationLeft extends WobbleAndRingDetermination {
+    public WobbleAndRingDeterminationLeft() {
+        super(308, 229);
     }
 }
