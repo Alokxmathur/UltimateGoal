@@ -39,7 +39,12 @@ public class TestT265Camera extends OpMode
 
     @Override
     public void init_loop() {
-        telemetry.addData("Status", "Initialized");
+        if (robot.fullyInitialized()) {
+            telemetry.addData("Status", "Initialized");
+        }
+        else {
+            telemetry.addData("Status", "Waiting for Vuforia to initialize");
+        }
         telemetry.update();
     }
 

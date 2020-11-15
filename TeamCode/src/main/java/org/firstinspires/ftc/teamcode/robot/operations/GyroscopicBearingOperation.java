@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.robot.operations;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
-import org.firstinspires.ftc.teamcode.robot.components.drivetrain.PIDController;
 
 import java.util.Locale;
 
@@ -40,9 +39,11 @@ public class GyroscopicBearingOperation extends Operation {
             double rotation = Math.max(Math.abs(error/180* MecanumDriveTrain.P_TURN_COEFF), MIN_SPEED);
             rotation *= -Math.signum(error);
             driveTrain.drive(0, 0, rotation, false);
+            /*
             Match.log(String.format(Locale.getDefault(),
                     "Gyroscopic bearing rotation: %.2f, error: %.2f",
                     rotation, error));
+             */
             return false;
         }
     }

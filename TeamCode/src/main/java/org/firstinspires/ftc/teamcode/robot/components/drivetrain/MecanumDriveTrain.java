@@ -37,13 +37,13 @@ public class MecanumDriveTrain {
     private static  final double     COUNTS_PER_MM = COUNTS_PER_MOTOR_REV  /
             (WHEEL_RADIUS  * Math.PI * 2);
     //our drive train width is 14 7/8 inches
-    public static final double DRIVE_TRAIN_WIDTH = 14.825* Field.MM_PER_INCH;
-    public static final double DRIVE_TRAIN_LENGTH = 12* Field.MM_PER_INCH;
+    public static final double DRIVE_TRAIN_WIDTH = 12.125* Field.MM_PER_INCH; //12 1/8 inches
+    public static final double DRIVE_TRAIN_LENGTH = 13.125* Field.MM_PER_INCH; //13 1/8 inches
     public static final double ARC_LENGTH_PER_DEGREE = 2 * Math.PI * (Math.hypot(DRIVE_TRAIN_LENGTH, DRIVE_TRAIN_WIDTH) / 2) / 360;
     public static final double TRAVEL_LENGTH_PER_TURN_DEGREE = 2 * Math.PI * (Math.hypot(DRIVE_TRAIN_LENGTH/2, DRIVE_TRAIN_WIDTH)) / 360;
 
     public static final double     HEADING_THRESHOLD       = 1 ;      // As tight as we can make it
-    public static final double     P_TURN_COEFF            = 1.65;     // Larger is more responsive, but also less stable
+    public static final double     P_TURN_COEFF            = 1;     // Larger is more responsive, but also less stable
     public static final double     P_DRIVE_COEFF           = 0.025;     // Larger is more responsive, but also less stable
 
     public static final int WITHIN_RANGE = 30;

@@ -1,7 +1,8 @@
-package org.firstinspires.ftc.teamcode.robot.components.camera;
+package org.firstinspires.ftc.teamcode.robot.components.vision;
 
 import android.graphics.Bitmap;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -189,6 +190,8 @@ public class WebCam {
                         ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(vuforiaCameraFromRobot, parameters.cameraDirection);
                     }
                     targetsUltimateGoal.activate();
+                    //start streaming to the FTC Dashboard
+                    FtcDashboard.getInstance().startCameraStream(vuforiaLocalizer, 0);
                     isInitialized = true;
                 }
             }

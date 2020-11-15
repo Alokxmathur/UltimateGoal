@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import android.util.Log;
 
+import com.arcrobotics.ftclib.geometry.Pose2d;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -13,22 +14,23 @@ import org.firstinspires.ftc.teamcode.robot.components.FoundationGripper;
 import org.firstinspires.ftc.teamcode.robot.components.PhoebeColorSensor;
 import org.firstinspires.ftc.teamcode.robot.components.PickerArm;
 import org.firstinspires.ftc.teamcode.robot.components.SideGrippers;
-import org.firstinspires.ftc.teamcode.robot.components.camera.WebCam;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
+import org.firstinspires.ftc.teamcode.robot.components.vision.VslamCamera;
+import org.firstinspires.ftc.teamcode.robot.components.vision.WebCam;
 import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirectionOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.DriveForTimeOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilColorOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.FollowTrajectory;
 import org.firstinspires.ftc.teamcode.robot.operations.FoundationGripperOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.GyroscopicBearingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.Operation;
 import org.firstinspires.ftc.teamcode.robot.operations.OperationThread;
 import org.firstinspires.ftc.teamcode.robot.operations.PickerOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.DriveForTimeOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.SideGrippersOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceWithHeadingOperation;
@@ -49,10 +51,9 @@ public class Robot {
 
     public static final double GRIPPER_LEFT_DISPLACEMENT = .5 * Field.MM_PER_INCH;
     public static final double GRIPPER_FORWARD_DISPLACEMENT = 6f * Field.MM_PER_INCH;
-    public static final double FOUNDATION_GRIPPER_FORWARD_DISPLACEMENT = GRIPPER_FORWARD_DISPLACEMENT
-            + 5.375 * Field.MM_PER_INCH;
 
-    public static final double LENGTH = 22*Field.MM_PER_INCH;
+    public static final double LENGTH = 22*Field.MM_PER_INCH; // 13 1/8 inches
+    public static final double WIDTH = MecanumDriveTrain.DRIVE_TRAIN_WIDTH + 2*Field.MM_PER_INCH;
 
     Telemetry telemetry;
     private HardwareMap hardwareMap;
@@ -67,13 +68,12 @@ public class Robot {
     FoundationGripper foundationGripper;
     SideGrippers sideGrippers;
     PhoebeColorSensor phoebeColorSensor;
+    WebCam camera;
+    VslamCamera vslamCamera;
 
     boolean everythingButVuforiaInitialized = false;
 
     //Our sensors etc.
-
-    WebCam camera;
-    //RealSenseCamera realSenseCamera;
 
     //our state
     String state = "pre-initialized";
@@ -104,7 +104,7 @@ public class Robot {
         //initialize our components
 
         initFoundationGripper();
-        initCamera(match.getAllianceColor(), match.getStartingPosition());
+        initCameras(match.getAllianceColor(), match.getStartingPosition());
         this.camera.turnLedOn();
         initDriveTrain();
         this.camera.turnLedOff();
@@ -143,8 +143,14 @@ public class Robot {
         this.phoebeColorSensor = new PhoebeColorSensor(hardwareMap, telemetry);
     }
 
-    public void initCamera(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
+    public void initCameras(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
         //initialize camera
+        telemetry.addData("Status", "Initializing VSLAM, please wait");
+        telemetry.update();
+        this.vslamCamera = new VslamCamera();
+        this.vslamCamera.init(hardwareMap, allianceColor, startingPosition);
+
+        //initialize webcam
         telemetry.addData("Status", "Initializing VuForia, please wait");
         telemetry.update();
         this.camera = new WebCam();
@@ -394,15 +400,15 @@ public class Robot {
     public void queueTertiaryOperation(Operation operation) {
         this.operationThreadTertiary.queueUpOperation(operation);
     }
-    public float getCurrentX() {
-        return this.camera.getCurrentX();
+    public double getCurrentX() {
+        return this.vslamCamera.getPosition().getX()*1000;
     }
 
-    public float getCurrentY() {
-        return this.camera.getCurrentY();
+    public double getCurrentY() {
+        return this.vslamCamera.getPosition().getY()*1000;
     }
 
-    public float getCurrentTheta() {return this.camera.getCurrentTheta();}
+    public double getCurrentTheta() {return this.vslamCamera.getPosition().getHeading();}
 
     public double getBearing() {
         //return this.camera.getCurrentBearing();
@@ -426,7 +432,18 @@ public class Robot {
     }
 
     public String getPosition() {
-        return this.camera.getPosition();
+        Pose2d pose = this.vslamCamera.getPosition();
+        if (pose != null) {
+            return String.format("(%.2f,%.2f)@%.2f",
+                    pose.getX()*1000/Field.MM_PER_INCH,
+                    pose.getY()*1000/Field.MM_PER_INCH,
+                    Math.toDegrees(pose.getHeading()));
+        }
+        return "Position Unknown";
+    }
+
+    public Pose2d getPose() {
+        return this.vslamCamera.getPosition();
     }
 
     public String getState() {
@@ -564,7 +581,15 @@ public class Robot {
                     this.pickerArm.extendHorizontally(10*winchPower);
                 }
              } else {
-                this.pickerArm.setWinchPower(winchPower);
+                if (winchPower > 0) {
+                    this.pickerArm.incrementWinchPosition();
+                } else if (winchPower < 0) {
+                    this.pickerArm.decrementWinchPosition();
+                }
+                else {
+                    //do nothing if the winch power is zero
+                    //this helps us maintain the winch position
+                }
             }
         }
 
@@ -585,10 +610,6 @@ public class Robot {
         }
         this.handleDriveTrain(gamePad1);
         this.handlePicker(gamePad1, gamePad2);
-    }
-
-    public void lowerFoundationGripper() {
-        this.foundationGripper.lowerGripper();
     }
 
     public Field.RingCount getNumberOfRings() {

@@ -1,9 +1,16 @@
 package org.firstinspires.ftc.teamcode.game;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.canvas.Canvas;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.arcrobotics.ftclib.geometry.Pose2d;
+import com.arcrobotics.ftclib.geometry.Rotation2d;
+import com.arcrobotics.ftclib.geometry.Translation2d;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Robot;
+import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
 
 import java.util.Date;
 
@@ -20,6 +27,7 @@ public class Match {
     public static String TEAM = "SilverTitans";
     private Robot robot = null;
     private Field field = null;
+    private FtcDashboard dashboard = FtcDashboard.getInstance();
     private Date startTime = new Date();
     private Date teleopStartTime = new Date();
     private Field.RingCount numberOfRings;
@@ -102,13 +110,15 @@ public class Match {
             //telemetry.addData("S", robot.getSensorStatus());
 
             telemetry.addData("Pos", robot.getPosition());
-            telemetry.addData("Bearing", robot.getBearing());
+            //telemetry.addData("Bearing", robot.getBearing());
             telemetry.addData("Picker", robot.getPickerArmStatus());
+            updateDashBoard();
         }
         else {
             telemetry.addData("Context", "Robot not initialized");
         }
         telemetry.update();
+        //updateDashBoard();
     }
 
     public void setAlliance(Alliance.Color allianceColor) {
@@ -132,5 +142,73 @@ public class Match {
 
     public void setStartingPosition(Field.StartingPosition startingPosition) {
         this.startingPosition = startingPosition;
+    }
+
+    public void updateDashBoard() {
+        TelemetryPacket packet = new TelemetryPacket();
+        Canvas field = packet.fieldOverlay();
+
+        Pose2d pose2d = robot.getPose();
+        if (pose2d == null) {
+            Match.log("Could not get pose");
+            return;
+        }
+        field.strokeCircle(pose2d.getX()*1000/Field.MM_PER_INCH, pose2d.getY()*1000/Field.MM_PER_INCH, .2);
+
+        // We multiply by 1000 to convert meters to mms
+        Translation2d translation = new Translation2d(pose2d.getX() * 1000, pose2d.getY() * 1000);
+        Rotation2d rotation = pose2d.getRotation();
+
+        //calculate the four points of the robot as if it was sitting on the origin
+        double x1 = MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2*rotation.getCos() + MecanumDriveTrain.DRIVE_TRAIN_WIDTH/2*rotation.getSin();
+        double y1 = MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2*rotation.getSin() - MecanumDriveTrain.DRIVE_TRAIN_WIDTH/2*rotation.getCos();
+        double x2 = MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2*rotation.getCos() - MecanumDriveTrain.DRIVE_TRAIN_WIDTH/2*rotation.getSin();
+        double y2 = MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2*rotation.getSin() + MecanumDriveTrain.DRIVE_TRAIN_WIDTH/2*rotation.getCos();
+        double x3 = -x1;
+        double y3 = -y1;
+        double x4 = -x2;
+        double y4 = -y2;
+
+        //add the robot's X coordinate to all X
+        x1 += translation.getX();
+        x2 += translation.getX();
+        x3 += translation.getX();
+        x4 += translation.getX();
+        //add the robot's Y coordinate to all Y
+        y1 += translation.getY();
+        y2 += translation.getY();
+        y3 += translation.getY();
+        y4 += translation.getY();
+
+        //convert all coordinates in mm to inches
+        x1 /= Field.MM_PER_INCH;
+        x2 /= Field.MM_PER_INCH;
+        x3 /= Field.MM_PER_INCH;
+        x4 /= Field.MM_PER_INCH;
+        y1 /= Field.MM_PER_INCH;
+        y2 /= Field.MM_PER_INCH;
+        y3 /= Field.MM_PER_INCH;
+        y4 /= Field.MM_PER_INCH;
+
+        //the point in front of the robot to create the triangle to show direction
+        double px = (translation.getX() + (MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2 + 100)*rotation.getCos()) / Field.MM_PER_INCH;
+        double py = (translation.getY() + (MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2 + 100)*rotation.getSin()) / Field.MM_PER_INCH;
+
+
+        //draw our rectangular robot
+        field.strokeLine(x1, y1, x2, y2);
+        field.strokeLine(x2, y2, x3, y3);
+        field.strokeLine(x3, y3, x4, y4);
+        field.strokeLine(x4, y4, x1, y1);
+
+        //draw two lines in the front to make the triangle to show direction
+        field.strokeLine(x1, y1, px, py);
+        field.strokeLine(x2, y2, px, py);
+
+        packet.put("x", pose2d.getX()*1000/Field.MM_PER_INCH);
+        packet.put("y", pose2d.getY()*1000/Field.MM_PER_INCH);
+        packet.put("theta", pose2d.getHeading());
+
+        dashboard.sendTelemetryPacket(packet);
     }
 }

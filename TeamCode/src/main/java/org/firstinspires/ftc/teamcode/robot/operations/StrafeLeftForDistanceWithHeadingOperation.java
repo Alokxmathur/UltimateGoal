@@ -45,7 +45,7 @@ public class StrafeLeftForDistanceWithHeadingOperation extends Operation {
             // if driving in reverse, the motor correction also needs to be reversed
             if (distance < 0)
                 steer *= -1.0;
-            double speedToUse = speed;//new Date().getTime() - this.getStartTime().getTime() < 400 ? 0.1 : speed;
+            double speedToUse = new Date().getTime() - this.getStartTime().getTime() < 500 ? 0.1 : speed;
             double leftSpeed = speedToUse - steer;
             double rightSpeed = speedToUse + steer;
 

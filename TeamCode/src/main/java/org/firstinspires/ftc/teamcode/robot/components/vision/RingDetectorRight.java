@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.robot.components.camera;
+package org.firstinspires.ftc.teamcode.robot.components.vision;
 
 public class RingDetectorRight extends RingDetector {
     private static final int startingX = 490;

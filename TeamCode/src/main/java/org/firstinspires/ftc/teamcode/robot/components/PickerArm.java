@@ -26,8 +26,6 @@ public class PickerArm {
     private static final String CAPSTONE_SERVO = "capstoneServo";
     //our shoulder motor
     DcMotor shoulderMotor;
-    //our shoulder correction motor
-    DcMotor shoulderCorrectionMotor;
     //and the winch
     DcMotor winchMotor;
     //and the gripper servo
@@ -56,6 +54,7 @@ public class PickerArm {
     public static final double SHOULDER_SPEED = .6;
 
     public static final int SHOULDER_INCREMENT = 10;
+    public static final int WINCH_INCREMENT = 10;
 
     public static final int SHOULDER_INITIAL_POSITION = 100;
     public static final int SHOULDER_RELEASE_POSITION = 260;
@@ -77,11 +76,11 @@ public class PickerArm {
     public static final int LEVEL_2_SHOULDER = 120;
     public static final int LEVEL_2_WINCH = 1045;
 
-    public static final int LEVEL_3_SHOULDER = 580;
-    public static final int LEVEL_3_WINCH = 1660;
+    public static final int LEVEL_3_SHOULDER = 450;
+    public static final int LEVEL_3_WINCH = 2200;
 
-    public static final int LEVEL_4_SHOULDER = 380;
-    public static final int LEVEL_4_WINCH = 3000;
+    public static final int LEVEL_4_SHOULDER = 150;
+    public static final int LEVEL_4_WINCH = 2200;
 
     public static final int LEVEL_5_SHOULDER = 310;
     public static final int LEVEL_5_WINCH = 2272;
@@ -107,7 +106,6 @@ public class PickerArm {
         this.telemetry = telemetry;
         // Define and Initialize Motors
         shoulderMotor = hardwareMap.get(DcMotor.class, SHOULDER_MOTOR);
-        shoulderCorrectionMotor = hardwareMap.get(DcMotor.class, SHOULDER_CORRECTION_MOTOR);
         winchMotor = hardwareMap.get(DcMotor.class, WINCH_MOTOR);
 
         gripperServo = hardwareMap.get(Servo.class, GRIPPER_SERVO);
@@ -117,10 +115,6 @@ public class PickerArm {
         this.shoulderMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         this.shoulderMotor.setZeroPowerBehavior(BRAKE);
         this.shoulderMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        // Set shoulder correction motor to run with encoders.
-        this.shoulderCorrectionMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.shoulderCorrectionMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         // Set winch motor to run with encoders.
         this.winchMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -140,9 +134,8 @@ public class PickerArm {
 
     public String getStatus() {
         return String.format(Locale.getDefault(),
-                "S:%.2f(%d->%d, c:%d(%d)),W:%.2f(%d->%d),%s,x:%.2f,y:%.2f,a:%.2f,e:%.2f",
+                "S:%.2f(%d->%d),W:%.2f(%d->%d),%s,x:%.2f,y:%.2f,a:%.2f,e:%.2f",
                 this.shoulderMotor.getPower(), this.shoulderMotor.getCurrentPosition(), this.shoulderMotor.getTargetPosition(),
-                this.shoulderCorrectionMotor.getCurrentPosition(), (int) (SHOULDER_GEAR_REDUCTION*this.shoulderCorrectionMotor.getCurrentPosition()),
                 this.winchMotor.getPower(), this.winchMotor.getCurrentPosition(), this.winchMotor.getTargetPosition(),
                 gripperIsOpen ? "Open" : "Closed",
                 getCurrentX(), getCurrentY(),
@@ -191,6 +184,14 @@ public class PickerArm {
 
     public void decrementShoulderPosition() {
         this.setShoulderPosition(currentShoulderPosition - SHOULDER_INCREMENT);
+    }
+
+    public void incrementWinchPosition() {
+        this.setWinchPosition(currentWinchPosition + WINCH_INCREMENT);
+    }
+
+    public void decrementWinchPosition() {
+        this.setWinchPosition(currentWinchPosition - WINCH_INCREMENT);
     }
 
     public void setWinchPower(float winchPower) {
@@ -350,8 +351,8 @@ public class PickerArm {
                 break;
             }
             case LEVEL_7: {
-                this.setShoulderPosition(LEVEL_6_SHOULDER);
-                this.setWinchPosition(LEVEL_6_WINCH);
+                this.setShoulderPosition(LEVEL_7_SHOULDER);
+                this.setWinchPosition(LEVEL_7_WINCH);
                 break;
             }
             case GRAB: {

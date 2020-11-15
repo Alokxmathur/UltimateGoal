@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.robot.components.camera;
+package org.firstinspires.ftc.teamcode.robot.components.vision;
 
 import android.util.Log;
 
