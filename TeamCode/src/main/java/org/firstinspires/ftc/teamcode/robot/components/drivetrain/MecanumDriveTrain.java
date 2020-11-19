@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.robot.components.drivetrain;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.game.Field;
+import org.firstinspires.ftc.teamcode.roadrunner.drive.PhoebeMecanumDrive;
 import org.firstinspires.ftc.teamcode.robot.components.imu.IMU;
 import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirectionOperation;
@@ -22,13 +24,11 @@ import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForTimeOperatio
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeUntilXYOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.TurnOperation;
 
-import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
-
 /**
  * Created by Silver Titans on 10/26/17.
  */
 
-public class MecanumDriveTrain {
+public class MecanumDriveTrain extends PhoebeMecanumDrive {
     //Define constants that help us move appropriate inches based on our drive configuration
     public static final double     COUNTS_PER_MOTOR_REV    = 537.6 ;    // eg: Rev 20:1 Motor Encoder
     //public static final double     COUNTS_PER_MOTOR_REV    = 1120 ;    // eg: Rev 40:1 Motor Encoder
@@ -48,8 +48,6 @@ public class MecanumDriveTrain {
 
     public static final int WITHIN_RANGE = 30;
 
-    //our four drive motors
-    DcMotor leftFrontDrive , rightFrontDrive, leftRearDrive, rightRearDrive;
     // The IMU sensor object
     IMU imu;
 
@@ -57,30 +55,9 @@ public class MecanumDriveTrain {
     private HardwareMap hardwareMap;
 
     public MecanumDriveTrain(HardwareMap hardwareMap, Telemetry telemetry) {
+        super(hardwareMap);
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
-        // Define and Initialize Motors
-        leftFrontDrive  = hardwareMap.get(DcMotor.class, "leftFrontDrive");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFrontDrive");
-        leftRearDrive  = hardwareMap.get(DcMotor.class, "leftRearDrive");
-        rightRearDrive = hardwareMap.get(DcMotor.class, "rightRearDrive");
-
-        // Set all dc motors to run with encoders.
-        this.leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.leftFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.leftFrontDrive.setZeroPowerBehavior(BRAKE);
-
-        this.rightFrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.rightFrontDrive.setZeroPowerBehavior(BRAKE);
-
-        this.leftRearDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.leftRearDrive.setZeroPowerBehavior(BRAKE);
-
-        this.rightRearDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.rightRearDrive.setZeroPowerBehavior(BRAKE);
 
         //setup our IMU
         this.imu = new IMU(hardwareMap);
@@ -92,7 +69,7 @@ public class MecanumDriveTrain {
      *
      */
     public void setLeftFrontPower(double power) {
-        this.leftFrontDrive.setPower(-power);
+        this.leftFront.setPower(power);
     }
 
     /**
@@ -100,7 +77,7 @@ public class MecanumDriveTrain {
      * @param power
      */
     public void setRightFrontPower(double power) {
-        this.rightFrontDrive.setPower(power);
+        this.rightFront.setPower(power);
     }
 
     /** Set power of left motor
@@ -109,7 +86,7 @@ public class MecanumDriveTrain {
      *
      */
     public void setLeftRearPower(double power) {
-        this.leftRearDrive.setPower(-power);
+        this.leftRear.setPower(power);
     }
 
     /**
@@ -117,7 +94,7 @@ public class MecanumDriveTrain {
      * @param power
      */
     public void setRightRearPower(double power) {
-        this.rightRearDrive.setPower(power);
+        this.rightRear.setPower(power);
     }
 
 
@@ -136,40 +113,39 @@ public class MecanumDriveTrain {
      * We do this by computing how much each wheel must be rotated to travel the specified distance
      * and then commanding the motors to reach the new desired encoder values
      *
-     * Note that to move the left motors forward, we have to specify an encoder value in the negative direction
      *
      */
     public void handleOperation(DriveForDistanceOperation operation) {
         stop();
         int encoderChange = (int) (operation.getDistance() * COUNTS_PER_MM);
-        this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() - encoderChange);
-        this.rightFrontDrive.setTargetPosition(rightFrontDrive.getCurrentPosition() + encoderChange);
-        this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
-        this.rightRearDrive.setTargetPosition(rightRearDrive.getCurrentPosition() + encoderChange);
+        this.leftFront.setTargetPosition(leftFront.getCurrentPosition() + encoderChange);
+        this.rightFront.setTargetPosition(rightFront.getCurrentPosition() + encoderChange);
+        this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
+        this.rightRear.setTargetPosition(rightRear.getCurrentPosition() + encoderChange);
 
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        this.leftFrontDrive.setPower(operation.getSpeed());
-        this.rightFrontDrive.setPower(operation.getSpeed());
-        this.leftRearDrive.setPower(operation.getSpeed());
-        this.rightRearDrive.setPower(operation.getSpeed());
+        this.leftFront.setPower(operation.getSpeed());
+        this.rightFront.setPower(operation.getSpeed());
+        this.leftRear.setPower(operation.getSpeed());
+        this.rightRear.setPower(operation.getSpeed());
     }
 
     public void handleOperation (DriveForDistanceInDirectionOperation operation) {
         stop();
         int encoderChange = (int) (operation.getDistance() * COUNTS_PER_MM);
-        this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() - encoderChange);
-        this.rightFrontDrive.setTargetPosition(rightFrontDrive.getCurrentPosition() + encoderChange);
-        this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
-        this.rightRearDrive.setTargetPosition(rightRearDrive.getCurrentPosition() + encoderChange);
+        this.leftFront.setTargetPosition(leftFront.getCurrentPosition() + encoderChange);
+        this.rightFront.setTargetPosition(rightFront.getCurrentPosition() + encoderChange);
+        this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
+        this.rightRear.setTargetPosition(rightRear.getCurrentPosition() + encoderChange);
 
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     public void handleOperation (DriveUntilColorOperation operation) {
@@ -188,10 +164,10 @@ public class MecanumDriveTrain {
      */
 
     public void handleOperation(RotateUntilVuMarkOperation operation) {
-        this.leftFrontDrive.setPower(operation.getSpeed());
-        this.rightFrontDrive.setPower(operation.getSpeed());
-        this.leftRearDrive.setPower(operation.getSpeed());
-        this.rightRearDrive.setPower(operation.getSpeed());
+        this.leftFront.setPower(operation.getSpeed());
+        this.rightFront.setPower(operation.getSpeed());
+        this.leftRear.setPower(operation.getSpeed());
+        this.rightRear.setPower(operation.getSpeed());
     }
 
     /**
@@ -219,20 +195,20 @@ public class MecanumDriveTrain {
     public void handleOperation(StrafeLeftForDistanceOperation operation) {
         stop();
         int encoderChange = (int) (operation.getDistance() * COUNTS_PER_MM * 1.04);
-        this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() + encoderChange);
-        this.rightFrontDrive.setTargetPosition(rightFrontDrive.getCurrentPosition() + encoderChange);
-        this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
-        this.rightRearDrive.setTargetPosition(rightRearDrive.getCurrentPosition() - encoderChange);
+        this.leftFront.setTargetPosition(leftFront.getCurrentPosition() - encoderChange);
+        this.rightFront.setTargetPosition(rightFront.getCurrentPosition() + encoderChange);
+        this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
+        this.rightRear.setTargetPosition(rightRear.getCurrentPosition() - encoderChange);
 
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        this.leftFrontDrive.setPower(operation.getSpeed());
-        this.rightFrontDrive.setPower(operation.getSpeed());
-        this.leftRearDrive.setPower(operation.getSpeed());
-        this.rightRearDrive.setPower(operation.getSpeed());
+        this.leftFront.setPower(operation.getSpeed());
+        this.rightFront.setPower(operation.getSpeed());
+        this.leftRear.setPower(operation.getSpeed());
+        this.rightRear.setPower(operation.getSpeed());
     }
 
 
@@ -246,10 +222,10 @@ public class MecanumDriveTrain {
      */
     public void handleOperation(StrafeLeftForTimeOperation operation) {
         stop();
-        this.leftFrontDrive.setPower(operation.getSpeed());
-        this.rightFrontDrive.setPower(operation.getSpeed());
-        this.leftRearDrive.setPower(-operation.getSpeed());
-        this.rightRearDrive.setPower(-operation.getSpeed());
+        this.leftFront.setPower(-operation.getSpeed());
+        this.rightFront.setPower(operation.getSpeed());
+        this.leftRear.setPower(operation.getSpeed());
+        this.rightRear.setPower(-operation.getSpeed());
     }
     /**
      * Handle operation to strafe for the specified distance perpendicular to the direction the robot is facing
@@ -261,28 +237,27 @@ public class MecanumDriveTrain {
      * We make the left front and right rear motors move forward while making the right front and left rear
      * motors propel backwards
      *
-     * Note that to move the left motors forward, we have to specify an encoder value in the negative direction
      */
     public void handleOperation(StrafeLeftForDistanceWithHeadingOperation operation) {
         stop();
         int encoderChange = (int) (operation.getDistance() * COUNTS_PER_MM);
-        this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() + encoderChange);
-        this.rightFrontDrive.setTargetPosition(rightFrontDrive.getCurrentPosition() + encoderChange);
-        this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
-        this.rightRearDrive.setTargetPosition(rightRearDrive.getCurrentPosition() - encoderChange);
+        this.leftFront.setTargetPosition(leftFront.getCurrentPosition() - encoderChange);
+        this.rightFront.setTargetPosition(rightFront.getCurrentPosition() + encoderChange);
+        this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
+        this.rightRear.setTargetPosition(rightRear.getCurrentPosition() - encoderChange);
 
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     public void handleOperation(StrafeUntilXYOperation operation) {
         double speed = operation.getSpeed();
-        this.leftFrontDrive.setPower(-speed);
-        this.rightFrontDrive.setPower(-speed);
-        this.leftRearDrive.setPower(speed);
-        this.rightRearDrive.setPower(speed);
+        this.leftFront.setPower(speed);
+        this.rightFront.setPower(-speed);
+        this.leftRear.setPower(-speed);
+        this.rightRear.setPower(speed);
     }
 
     /**
@@ -293,7 +268,6 @@ public class MecanumDriveTrain {
      * the circle the wheels would describe if the left ones are propelling the robot forward
      * and the right ones are propelling the robot backwards
      *
-     * Note that to move the left motors forward, we have to specify an encoder value in the negative direction
      *
      */
 
@@ -303,20 +277,20 @@ public class MecanumDriveTrain {
         double arcLength =
                 ARC_LENGTH_PER_DEGREE * operation.getDegrees();
         int encoderChange = (int) (arcLength * COUNTS_PER_MM);
-        this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() - encoderChange);
-        this.rightFrontDrive.setTargetPosition(rightFrontDrive.getCurrentPosition() - encoderChange);
-        this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
-        this.rightRearDrive.setTargetPosition(rightRearDrive.getCurrentPosition() - encoderChange);
+        this.leftFront.setTargetPosition(leftFront.getCurrentPosition() + encoderChange);
+        this.rightFront.setTargetPosition(rightFront.getCurrentPosition() - encoderChange);
+        this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
+        this.rightRear.setTargetPosition(rightRear.getCurrentPosition() - encoderChange);
 
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        this.leftFrontDrive.setPower(operation.getSpeed());
-        this.rightFrontDrive.setPower(operation.getSpeed());
-        this.leftRearDrive.setPower(operation.getSpeed());
-        this.rightRearDrive.setPower(operation.getSpeed());
+        this.leftFront.setPower(operation.getSpeed());
+        this.rightFront.setPower(operation.getSpeed());
+        this.leftRear.setPower(operation.getSpeed());
+        this.rightRear.setPower(operation.getSpeed());
     }
 
     public void handleOperation(TurnOperation operation) {
@@ -326,28 +300,28 @@ public class MecanumDriveTrain {
                 TRAVEL_LENGTH_PER_TURN_DEGREE * operation.getDegrees();
         int encoderChange = (int) (arcLength * COUNTS_PER_MM);
         if (operation.getDirection() == TurnOperation.Direction.RIGHT) {
-            this.leftFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() - encoderChange);
-            this.leftRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() - encoderChange);
+            this.leftFront.setTargetPosition(leftFront.getCurrentPosition() + encoderChange);
+            this.leftRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
 
-            this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            this.leftRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            this.leftFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            this.leftRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            this.leftFrontDrive.setPower(operation.getSpeed());
-            this.leftRearDrive.setPower(operation.getSpeed());
-            this.rightFrontDrive.setPower(0);
-            this.rightRearDrive.setPower(0);
+            this.leftFront.setPower(operation.getSpeed());
+            this.leftRear.setPower(operation.getSpeed());
+            this.rightFront.setPower(0);
+            this.rightRear.setPower(0);
         }
         else {
-            this.rightFrontDrive.setTargetPosition(leftFrontDrive.getCurrentPosition() + encoderChange);
-            this.rightRearDrive.setTargetPosition(leftRearDrive.getCurrentPosition() + encoderChange);
+            this.rightFront.setTargetPosition(leftFront.getCurrentPosition() + encoderChange);
+            this.rightRear.setTargetPosition(leftRear.getCurrentPosition() + encoderChange);
 
-            this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            this.rightRearDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            this.rightFront.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            this.rightFrontDrive.setPower(operation.getSpeed());
-            this.rightRearDrive.setPower(operation.getSpeed());
-            this.leftFrontDrive.setPower(0);
-            this.leftRearDrive.setPower(0);
+            this.rightFront.setPower(operation.getSpeed());
+            this.rightRear.setPower(operation.getSpeed());
+            this.leftFront.setPower(0);
+            this.leftRear.setPower(0);
         }
     }
 
@@ -366,12 +340,12 @@ public class MecanumDriveTrain {
 
     private boolean withinRange()  {
 
-        return withinRange(leftFrontDrive, rightFrontDrive, leftRearDrive, rightRearDrive);
+        return withinRange(leftFront, rightFront, leftRear, rightRear);
 
     }
 
     public boolean leftWithinRange() {
-        if (withinRange(leftRearDrive, leftFrontDrive)) {
+        if (withinRange(leftRear, leftFront)) {
             stop();
             return true;
         }
@@ -379,7 +353,7 @@ public class MecanumDriveTrain {
     }
 
     public boolean rightWithinRange() {
-        if (withinRange(rightRearDrive, rightFrontDrive)) {
+        if (withinRange(rightRear, rightFront)) {
             stop();
             return true;
         }
@@ -403,22 +377,22 @@ public class MecanumDriveTrain {
 
     public void stop() {
         //Stop our motors
-        leftFrontDrive.setPower(0);
-        rightFrontDrive.setPower(0);
-        leftRearDrive.setPower(0);
-        rightRearDrive.setPower(0);
-        this.leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.leftRearDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        this.rightRearDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftFront.setPower(0);
+        rightFront.setPower(0);
+        leftRear.setPower(0);
+        rightRear.setPower(0);
+        this.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        this.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        this.leftRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        this.rightRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public String getStatus() {
         return String.format("LF:%.2f(%d>%d),RF:%.2f(%d>%d),LR:%.2f(%d>%d),RR:%.2f(%d>%d)",
-            this.leftFrontDrive.getPower(), this.leftFrontDrive.getCurrentPosition(), this.leftFrontDrive.getTargetPosition(),
-            this.rightFrontDrive.getPower(), this.rightFrontDrive.getCurrentPosition(), this.rightFrontDrive.getTargetPosition(),
-            this.leftRearDrive.getPower(), this.leftRearDrive.getCurrentPosition(), this.leftRearDrive.getTargetPosition(),
-            this.rightRearDrive.getPower(), this.rightRearDrive.getCurrentPosition(), this.rightRearDrive.getTargetPosition());
+            this.leftFront.getPower(), this.leftFront.getCurrentPosition(), this.leftFront.getTargetPosition(),
+            this.rightFront.getPower(), this.rightFront.getCurrentPosition(), this.rightFront.getTargetPosition(),
+            this.leftRear.getPower(), this.leftRear.getCurrentPosition(), this.leftRear.getTargetPosition(),
+            this.rightRear.getPower(), this.rightRear.getCurrentPosition(), this.rightRear.getTargetPosition());
     }
 
     public static void setMode(DcMotor motor, DcMotor.RunMode mode) {
@@ -473,9 +447,9 @@ public class MecanumDriveTrain {
             v3 /= scale;
             v4 /= scale;
         }
-        setLeftFrontPower(v1);
+        setLeftFrontPower(-v1);
         setRightFrontPower(v2);
-        setLeftRearPower(v3);
+        setLeftRearPower(-v3);
         setRightRearPower(v4);
     }
 
@@ -486,5 +460,10 @@ public class MecanumDriveTrain {
             ret = Math.max(ret, Math.abs(x));
         }
         return ret;
+    }
+
+    public Pose2d getPosition() {
+        super.update();
+        return super.getPoseEstimate();
     }
 }

@@ -74,6 +74,7 @@ public abstract class AutonomousHelper extends OpMode {
     @Override
     public void init_loop() {
         if (robot.fullyInitialized()) {
+            robot.setPose(match.getAllianceColor(), match.getStartingPosition());
             match.updateTelemetry(telemetry,"Initialized, let's go");
         }
         else {
@@ -317,10 +318,9 @@ public abstract class AutonomousHelper extends OpMode {
     }
 
     protected void queueSecondWobbleCollection() {
-        Match.log("Current position=" + robot.getPosition());
-
         double currentX = Math.abs(robot.getCurrentX());
         double currentY = Math.abs(robot.getCurrentY());
+        Match.log("Current position=" + currentX + "," + currentY);
 
         double desiredHeading = (match.getStartingPosition() == Field.StartingPosition.RIGHT) ? 90 : -90;
 

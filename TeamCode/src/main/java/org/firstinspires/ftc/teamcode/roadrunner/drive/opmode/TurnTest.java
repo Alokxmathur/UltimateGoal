@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.roadrunner.drive.PhoebeMecanumDrive;
 
 /*
  * This is a simple routine to test turning capabilities.
@@ -16,8 +16,12 @@ public class TurnTest extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+        PhoebeMecanumDrive drive = new PhoebeMecanumDrive(hardwareMap);
 
+        while (!drive.isReady() && !isStopRequested()) {
+            telemetry.addData("Status", "Waiting for drive");
+            telemetry.update();
+        };
         waitForStart();
 
         if (isStopRequested()) return;

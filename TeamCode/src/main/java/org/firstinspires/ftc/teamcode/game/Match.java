@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.game;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.arcrobotics.ftclib.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.arcrobotics.ftclib.geometry.Rotation2d;
 import com.arcrobotics.ftclib.geometry.Translation2d;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -112,7 +112,7 @@ public class Match {
             telemetry.addData("Pos", robot.getPosition());
             //telemetry.addData("Bearing", robot.getBearing());
             telemetry.addData("Picker", robot.getPickerArmStatus());
-            updateDashBoard();
+            Match.updateDashBoard(robot.getPose(), dashboard);
         }
         else {
             telemetry.addData("Context", "Robot not initialized");
@@ -144,20 +144,19 @@ public class Match {
         this.startingPosition = startingPosition;
     }
 
-    public void updateDashBoard() {
+    public static void updateDashBoard(Pose2d pose2d, FtcDashboard dashboard) {
         TelemetryPacket packet = new TelemetryPacket();
         Canvas field = packet.fieldOverlay();
 
-        Pose2d pose2d = robot.getPose();
         if (pose2d == null) {
             Match.log("Could not get pose");
             return;
         }
-        field.strokeCircle(pose2d.getX()*1000/Field.MM_PER_INCH, pose2d.getY()*1000/Field.MM_PER_INCH, .2);
+        field.strokeCircle(pose2d.getX(), pose2d.getY(), .2);
 
         // We multiply by 1000 to convert meters to mms
         Translation2d translation = new Translation2d(pose2d.getX() * 1000, pose2d.getY() * 1000);
-        Rotation2d rotation = pose2d.getRotation();
+        Rotation2d rotation = new Rotation2d(pose2d.getHeading());
 
         //calculate the four points of the robot as if it was sitting on the origin
         double x1 = MecanumDriveTrain.DRIVE_TRAIN_LENGTH/2*rotation.getCos() + MecanumDriveTrain.DRIVE_TRAIN_WIDTH/2*rotation.getSin();

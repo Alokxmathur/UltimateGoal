@@ -5,8 +5,9 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.teamcode.roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.roadrunner.drive.PhoebeMecanumDrive;
 
 /*
  * Op mode for preliminary tuning of the follower PID coefficients (located in the drive base
@@ -32,8 +33,7 @@ public class BackAndForth extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
-
+        PhoebeMecanumDrive drive = new PhoebeMecanumDrive(hardwareMap);
         Trajectory trajectoryForward = drive.trajectoryBuilder(new Pose2d())
                 .forward(DISTANCE)
                 .build();
@@ -41,10 +41,17 @@ public class BackAndForth extends LinearOpMode {
         Trajectory trajectoryBackward = drive.trajectoryBuilder(trajectoryForward.end())
                 .back(DISTANCE)
                 .build();
-
+        telemetry.addData("Status", "Waiting for drive");
+        telemetry.update();
+        RobotLog.i("Starting drive");
+        while (!drive.isReady() && !isStopRequested()) {
+            telemetry.addData("Status", "Waiting for drive");
+            telemetry.update();
+        };
         waitForStart();
 
         while (opModeIsActive() && !isStopRequested()) {
+            RobotLog.i("Pos: " + drive.getPoseEstimate());
             drive.followTrajectory(trajectoryForward);
             drive.followTrajectory(trajectoryBackward);
         }

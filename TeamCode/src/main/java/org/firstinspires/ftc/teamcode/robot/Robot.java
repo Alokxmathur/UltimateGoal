@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import android.util.Log;
 
-import com.arcrobotics.ftclib.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -15,7 +15,6 @@ import org.firstinspires.ftc.teamcode.robot.components.PhoebeColorSensor;
 import org.firstinspires.ftc.teamcode.robot.components.PickerArm;
 import org.firstinspires.ftc.teamcode.robot.components.SideGrippers;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
-import org.firstinspires.ftc.teamcode.robot.components.vision.VslamCamera;
 import org.firstinspires.ftc.teamcode.robot.components.vision.WebCam;
 import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
@@ -69,9 +68,8 @@ public class Robot {
     SideGrippers sideGrippers;
     PhoebeColorSensor phoebeColorSensor;
     WebCam camera;
-    VslamCamera vslamCamera;
 
-    boolean everythingButVuforiaInitialized = false;
+    boolean everythingButVuforiaCamerasInitialized = false;
 
     //Our sensors etc.
 
@@ -114,7 +112,7 @@ public class Robot {
         //initColorSensor();
         //initRealSenseCamera();
 
-        this.everythingButVuforiaInitialized = true;
+        this.everythingButVuforiaCamerasInitialized = true;
         telemetry.update();
     }
 
@@ -147,8 +145,6 @@ public class Robot {
         //initialize camera
         telemetry.addData("Status", "Initializing VSLAM, please wait");
         telemetry.update();
-        this.vslamCamera = new VslamCamera();
-        this.vslamCamera.init(hardwareMap, allianceColor, startingPosition);
 
         //initialize webcam
         telemetry.addData("Status", "Initializing VuForia, please wait");
@@ -401,14 +397,17 @@ public class Robot {
         this.operationThreadTertiary.queueUpOperation(operation);
     }
     public double getCurrentX() {
-        return this.vslamCamera.getPosition().getX()*1000;
+        return this.mecanumDriveTrain.getPosition().getX()*Field.MM_PER_INCH;
     }
 
     public double getCurrentY() {
-        return this.vslamCamera.getPosition().getY()*1000;
+        return this.mecanumDriveTrain.getPosition().getY()*Field.MM_PER_INCH;
     }
 
-    public double getCurrentTheta() {return this.vslamCamera.getPosition().getHeading();}
+    public Pose2d getPose() {
+        return this.mecanumDriveTrain.getPosition();
+    }
+    public double getCurrentTheta() {return this.mecanumDriveTrain.getPosition().getHeading();}
 
     public double getBearing() {
         //return this.camera.getCurrentBearing();
@@ -432,18 +431,14 @@ public class Robot {
     }
 
     public String getPosition() {
-        Pose2d pose = this.vslamCamera.getPosition();
+        Pose2d pose = this.mecanumDriveTrain.getPosition();
         if (pose != null) {
             return String.format("(%.2f,%.2f)@%.2f",
-                    pose.getX()*1000/Field.MM_PER_INCH,
-                    pose.getY()*1000/Field.MM_PER_INCH,
+                    pose.getX(),
+                    pose.getY(),
                     Math.toDegrees(pose.getHeading()));
         }
         return "Position Unknown";
-    }
-
-    public Pose2d getPose() {
-        return this.vslamCamera.getPosition();
     }
 
     public String getState() {
@@ -455,7 +450,7 @@ public class Robot {
     }
 
     public boolean fullyInitialized() {
-        return this.everythingButVuforiaInitialized && this.camera.isInitialized();
+        return this.everythingButVuforiaCamerasInitialized && this.camera.isInitialized() && this.mecanumDriveTrain.isReady();
     }
 
     public boolean isGyroCalibrated() {
@@ -616,4 +611,7 @@ public class Robot {
         return this.camera.getNumberOfRings();
     }
 
+    public void setPose(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
+        this.mecanumDriveTrain.setPose(allianceColor, startingPosition);
+    }
 }

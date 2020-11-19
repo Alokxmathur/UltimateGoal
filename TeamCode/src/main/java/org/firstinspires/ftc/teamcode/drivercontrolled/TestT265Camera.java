@@ -12,11 +12,12 @@ import com.spartronics4915.lib.T265Camera;
 
 import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.Robot;
+import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
 
 @TeleOp(name="Test T265", group="Iterative Opmode")
 public class TestT265Camera extends OpMode
 {
-    public static final double T265_OFFSET_FRONT = -Robot.LENGTH/1000/2;
+    public static final double T265_OFFSET_FRONT = -MecanumDriveTrain.DRIVE_TRAIN_LENGTH/1000/2;
     public static final double  T265_CAMERA_OFFSET_LEFT = 0;
     public static final double T265_ROTATION = 180;
 
@@ -75,6 +76,8 @@ public class TestT265Camera extends OpMode
         double x1 = translation.getX() + arrowX  / 2, y1 = translation.getY() + arrowY / 2;
         double x2 = translation.getX() + arrowX, y2 = translation.getY() + arrowY;
         field.strokeLine(x1, y1, x2, y2);
+
+        packet.addLine("Pos" + translation.toString());
 
         dashboard.sendTelemetryPacket(packet);
 

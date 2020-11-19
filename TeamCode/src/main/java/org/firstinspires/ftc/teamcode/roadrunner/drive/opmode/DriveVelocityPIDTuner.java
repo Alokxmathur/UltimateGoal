@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.teamcode.roadrunner.drive.DriveConstants;
-import org.firstinspires.ftc.teamcode.roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.roadrunner.drive.PhoebeMecanumDrive;
 
 import java.util.List;
 
@@ -55,7 +55,7 @@ public class DriveVelocityPIDTuner extends LinearOpMode {
 
     private FtcDashboard dashboard = FtcDashboard.getInstance();
 
-    private SampleMecanumDrive drive;
+    private PhoebeMecanumDrive drive;
 
     enum Mode {
         DRIVER_MODE,
@@ -87,8 +87,7 @@ public class DriveVelocityPIDTuner extends LinearOpMode {
 
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        drive = new SampleMecanumDrive(hardwareMap);
-
+        PhoebeMecanumDrive drive = new PhoebeMecanumDrive(hardwareMap);
         mode = Mode.TUNING_MODE;
 
         drive.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, MOTOR_VELO_PID);
@@ -99,7 +98,14 @@ public class DriveVelocityPIDTuner extends LinearOpMode {
         telemetry.update();
         telemetry.clearAll();
 
+        while (!drive.isReady() && !isStopRequested()) {
+            telemetry.addData("Status", "Waiting for drive");
+            telemetry.update();
+        };
         waitForStart();
+
+        telemetry.addLine("Press play to begin the feedforward tuning routine");
+        telemetry.update();
 
         if (isStopRequested()) return;
 

@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.roadrunner.drive.DriveConstants;
-import org.firstinspires.ftc.teamcode.roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.roadrunner.drive.PhoebeMecanumDrive;
 
 import java.util.Objects;
 
@@ -33,7 +33,7 @@ public class MaxVelocityTuner extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+        PhoebeMecanumDrive drive = new PhoebeMecanumDrive(hardwareMap);
 
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
@@ -45,6 +45,10 @@ public class MaxVelocityTuner extends LinearOpMode {
         telemetry.addLine("Press start when ready.");
         telemetry.update();
 
+        while (!drive.isReady() && !isStopRequested()) {
+            telemetry.addData("Status", "Waiting for drive");
+            telemetry.update();
+        };
         waitForStart();
 
         telemetry.clearAll();
