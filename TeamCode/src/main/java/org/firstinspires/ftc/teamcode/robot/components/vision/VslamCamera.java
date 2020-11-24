@@ -13,6 +13,7 @@ import com.spartronics4915.lib.T265Camera;
 
 import org.firstinspires.ftc.teamcode.game.Alliance;
 import org.firstinspires.ftc.teamcode.game.Field;
+import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
 import org.jetbrains.annotations.NotNull;
@@ -46,12 +47,12 @@ public class VslamCamera implements Localizer {
                         if (t265Camera == null) {
                             t265Camera = new T265Camera(t265LocationOnRobot, 0.8, hardwareMap.appContext);
                             try {//start our camera
-                                RobotLog.i("Starting camera");
+                                Match.log("Starting camera");
                                 t265Camera.start();
-                                RobotLog.i("Started camera");
+                                Match.log("Started camera");
                             }
                             catch (Throwable e) {
-                                RobotLog.i("Exception starting camera: " + e);
+                                Match.log("Exception starting camera: " + e);
                             }
                         }
                         t265Camera.setPose(new Pose2d(0, 0, new Rotation2d(0)));
@@ -78,7 +79,7 @@ public class VslamCamera implements Localizer {
                 startingPose = new Pose2d(
                         robotDriveTrainCenterStart,
                         -(Field.TILE_WIDTH*2 + Field.TAPE_WIDTH - Robot.WIDTH/2)/1000,
-                        new Rotation2d(Math.toRadians(180)));
+                    new Rotation2d(Math.toRadians(180)));
             }
             else {
                 startingPose = new Pose2d(
@@ -103,7 +104,7 @@ public class VslamCamera implements Localizer {
         }
         //set the pose of the camera
         t265Camera.setPose(startingPose);
-    }
+        }
 
     public boolean isInitialized() {
         synchronized (synchronizationObject) {
@@ -172,6 +173,6 @@ public class VslamCamera implements Localizer {
         catch (Throwable e) {
             RobotLog.ee("Vslam", e, "Error getting position");
         }
-        //RobotLog.i(currentPosition.toString() + ", " + lastPose.toString());
+        //Match.log(currentPosition.toString() + ", " + lastPose.toString());
     }
 }

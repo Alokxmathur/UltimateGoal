@@ -69,7 +69,7 @@ public class OperationThread extends Thread {
                     robot.abortOperation(operation) ;
                 }
             }
-            this.operationsQueue = new ArrayList<Operation>();
+            this.operationsQueue.clear();
         }
     }
 

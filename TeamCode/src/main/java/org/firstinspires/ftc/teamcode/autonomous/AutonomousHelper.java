@@ -356,7 +356,7 @@ public abstract class AutonomousHelper extends OpMode {
     protected void queueDepositSecondWobble() {
         //retract from the second wobble goal
         robot.queuePrimaryOperation(
-                new DriveForDistanceInDirectionOperation(-Field.TILE_WIDTH, 0, CAUTIOUS_SPEED, "Retract from second wobble"));
+                new DriveForDistanceInDirectionOperation(-Field.TILE_WIDTH, 0, SUPER_CAUTIOUS_SPEED, "Retract from second wobble"));
         //rotate to face forward
         robot.queuePrimaryOperation(new GyroscopicBearingOperation(0, "Face forward"));
         //drive up to the right square

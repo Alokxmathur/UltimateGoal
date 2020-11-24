@@ -308,10 +308,6 @@ public class Robot {
                 this.mecanumDriveTrain.handleOperation((StrafeLeftForDistanceWithHeadingOperation) operation);
                 break;
             }
-            case STRAFE_UNTIL_XY: {
-                this.mecanumDriveTrain.handleOperation((StrafeUntilXYOperation) operation);
-                break;
-            }
             case DRIVE_FOR_TIME: {
                 this.mecanumDriveTrain.handleOperation((DriveForTimeOperation) operation);
                 break;
@@ -411,7 +407,7 @@ public class Robot {
 
     public double getBearing() {
         //return this.camera.getCurrentBearing();
-        return this.mecanumDriveTrain.getIMU().getBearing();
+        return this.mecanumDriveTrain.getPosition().getHeading();
     }
 
     public boolean operationsCompleted() {
@@ -451,10 +447,6 @@ public class Robot {
 
     public boolean fullyInitialized() {
         return this.everythingButVuforiaCamerasInitialized && this.camera.isInitialized() && this.mecanumDriveTrain.isReady();
-    }
-
-    public boolean isGyroCalibrated() {
-        return this.mecanumDriveTrain.getIMU().isCalibrated();
     }
 
     public String getPickerArmStatus() {

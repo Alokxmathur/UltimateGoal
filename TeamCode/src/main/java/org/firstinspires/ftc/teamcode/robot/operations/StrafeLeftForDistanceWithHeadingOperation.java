@@ -39,7 +39,8 @@ public class StrafeLeftForDistanceWithHeadingOperation extends Operation {
         }
         else {
             // adjust relative SPEED based on desiredHeading error.
-            double bearingError = AngleUnit.normalizeDegrees(heading - driveTrain.getIMU().getBearing());
+            double bearingError = AngleUnit.normalizeDegrees
+                    (heading - Math.toDegrees(driveTrain.getPosition().getHeading()));
             double steer = MecanumDriveTrain.getSteer(bearingError, MecanumDriveTrain.P_DRIVE_COEFF);
 
             // if driving in reverse, the motor correction also needs to be reversed

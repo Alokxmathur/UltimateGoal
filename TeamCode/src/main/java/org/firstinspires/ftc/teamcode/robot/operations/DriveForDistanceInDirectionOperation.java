@@ -39,7 +39,8 @@ public class DriveForDistanceInDirectionOperation extends DriveForDistanceOperat
             return true;
         } else {
             // adjust relative speed based on heading error.
-            double bearingError = AngleUnit.normalizeDegrees(direction - driveTrain.getIMU().getBearing());
+            double bearingError = AngleUnit.normalizeDegrees
+                    (direction - Math.toDegrees(driveTrain.getPosition().getHeading()));
             double steer = MecanumDriveTrain.getSteer(bearingError, MecanumDriveTrain.P_DRIVE_COEFF);
 
             // if driving in reverse, the motor correction also needs to be reversed

@@ -1,9 +1,6 @@
 package org.firstinspires.ftc.teamcode.robot.components.imu;
 
-import android.graphics.drawable.GradientDrawable;
-
 import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
@@ -30,19 +27,6 @@ public class IMU {
 
     private Orientation angles;
     private Acceleration gravity;
-
-    public IMU(HardwareMap hardwareMap) {
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled = true;
-        parameters.useExternalCrystal = true;
-        parameters.mode = BNO055IMU.SensorMode.IMU;
-        parameters.loggingTag = "Silver Titans IMU";
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-
-        imu.initialize(parameters);
-    }
 
     public void calibrateWithKnownLocation(OpenGLMatrix knownLocation) {
         //first get our state from the IMU

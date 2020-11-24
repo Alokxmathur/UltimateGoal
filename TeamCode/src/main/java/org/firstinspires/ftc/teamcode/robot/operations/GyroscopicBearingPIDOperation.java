@@ -18,7 +18,7 @@ public class GyroscopicBearingPIDOperation extends GyroscopicBearingOperation {
 
     public boolean isComplete(MecanumDriveTrain driveTrain) {
         // determine turn power based on +/- error
-        double currentBearing = driveTrain.getIMU().getRawBearing();
+        double currentBearing = Math.toDegrees(driveTrain.getPosition().getHeading());
         double error = AngleUnit.normalizeDegrees(desiredBearing - currentBearing) / 180;
 
         if (Math.abs(error) <= MecanumDriveTrain.HEADING_THRESHOLD) {

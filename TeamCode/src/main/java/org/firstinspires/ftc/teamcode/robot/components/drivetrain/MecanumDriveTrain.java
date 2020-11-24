@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot.components.drivetrain;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
@@ -21,7 +22,6 @@ import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperatio
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceWithHeadingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForTimeOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.StrafeUntilXYOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.TurnOperation;
 
 /**
@@ -58,9 +58,6 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
         super(hardwareMap);
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
-
-        //setup our IMU
-        this.imu = new IMU(hardwareMap);
     }
 
     /** Set power of left motor
@@ -103,7 +100,7 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
     }
 
     public void handleOperation(FollowTrajectory trajectoryOperation) {
-
+        super.followTrajectory(trajectoryOperation.getTrajectory());
     }
 
     /**
@@ -252,14 +249,6 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
         this.rightRear.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
-    public void handleOperation(StrafeUntilXYOperation operation) {
-        double speed = operation.getSpeed();
-        this.leftFront.setPower(speed);
-        this.rightFront.setPower(-speed);
-        this.leftRear.setPower(-speed);
-        this.rightRear.setPower(speed);
-    }
-
     /**
      * Handle operation to rotate the robot for the specified degrees
      * @param operation
@@ -326,7 +315,12 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
     }
 
     public void handleOperation(GyroscopicBearingOperation operation) {
-        stop();
+        Pose2d currentPose = getPosition();
+        Pose2d desiredPose =
+                new Pose2d(currentPose.getX(), currentPose.getY(), Math.toRadians(operation.getDesiredBearing()));
+        Trajectory trajectory = trajectoryBuilder(currentPose).lineToLinearHeading(desiredPose)
+                .build();
+        followTrajectoryAsync(trajectory);
     }
 
     private boolean withinRange(DcMotor... motors) {
@@ -399,11 +393,6 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
         motor.setMode(mode);
     }
 
-    public IMU getIMU() {
-        return this.imu;
-    }
-
-
 
     /**
      * returns desired steering force.  +/- 1 range.  +ve = steer left
@@ -425,7 +414,7 @@ public class MecanumDriveTrain extends PhoebeMecanumDrive {
      */
     public void drive(double direction, double speed, double rotation, boolean fieldRelative) {
         final double fieldCentricDirection = (direction
-                + (fieldRelative ? Math.toRadians(this.getIMU().getBearing()) : 0)) % 360;
+                + (fieldRelative ? getPosition().getHeading() : 0)) % 360;
 
         double sin =  Math.sin(fieldCentricDirection + Math.PI / 4.0);
         double cos = Math.cos(fieldCentricDirection + Math.PI / 4.0);
