@@ -9,11 +9,11 @@ import java.util.Locale;
  * Created by Silver Titans on 10/12/17.
  */
 
-public class DriveForDistanceOperation extends Operation {
+public class DistanceOperation extends Operation {
     private double distance;
     private double speed;
 
-    public DriveForDistanceOperation(double distance, double speed, String title) {
+    public DistanceOperation(double distance, double speed, String title) {
         this.distance = distance;
         this.speed = speed;
         this.type = TYPE.DRIVE_FOR_DISTANCE;

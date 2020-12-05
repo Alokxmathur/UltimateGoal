@@ -44,11 +44,11 @@ public class RingDetector {
      */
     static Point rectangleBottomLeft = new Point(0, 0);
 
-    static volatile int rectangleHeight = 70;
+    static volatile int rectangleHeight = 50;
     static volatile int rectangleWidth = 90;
 
-    int fourRingThreshold = 150;
-    int oneRingThreshold = 137;
+    int fourRingThreshold = 140;
+    int oneRingThreshold = 130;
 
     /*
      * Working variables
@@ -79,14 +79,14 @@ public class RingDetector {
                 2); // Thickness of the rectangle lines
 
         Field.RingCount ringCount = Field.RingCount.FOUR; // Record our analysis
-        if (redAverage > fourRingThreshold) {
+        if (redAverage >= fourRingThreshold) {
             ringCount = Field.RingCount.FOUR;
-        } else if (redAverage > oneRingThreshold) {
+        } else if (redAverage >= oneRingThreshold) {
             ringCount = Field.RingCount.ONE;
         } else {
             ringCount = Field.RingCount.NONE;
         }
-        Match.log("Average red count=" + redAverage);
+        Match.log("Average red count=" + redAverage + ", seeing " + ringCount + " rings");
 
         return ringCount;
 

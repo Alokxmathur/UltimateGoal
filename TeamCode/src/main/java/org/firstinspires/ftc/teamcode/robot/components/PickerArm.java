@@ -31,7 +31,7 @@ public class PickerArm {
     //and the gripper servo
     Servo gripperServo;
     //and the capstone servo
-    Servo capStoneServo;
+    Servo ringServo;
 
     public static final double SHOULDER_GEAR_REDUCTION = (125f/30f) * (40f/15f);
     public static final double HD_HEX_20_TO_1_ENCODER_COUNT_PER_REV    = 560 ;    // eg: Rev 20:1 Motor Encoder
@@ -47,8 +47,8 @@ public class PickerArm {
     public static final double  GRIPPER_CLOSED_POSITION= 0;
     public static final double  GRIPPER_OPEN_POSITION= 0.4;
 
-    public static final double  CAPSTONE_HELD_POSITION= .1;
-    public static final double  CAPSTONE_RELEASED_POSITION= 0.6;
+    public static final double RING_HELD_POSITION = .15;
+    public static final double RING_RELEASED_POSITION = 0.1;
 
     public static final double WINCH_SPEED = 1;
     public static final double SHOULDER_SPEED = .6;
@@ -63,7 +63,7 @@ public class PickerArm {
     public static final int SHOULDER_LEVEL_POSITION = 0;
     public static final int SHOULDER_GRAB_POSITION = 80;
 
-    public static final double HOVER_EXTENSION = 1600;
+    public static final double HOVER_EXTENSION = 2000;
 
     public static final int WITHIN_REACH_INTERVAL_SHOULDER = 40;
     public static final int WITHIN_REACH_INTERVAL_WINCH = 60;
@@ -71,19 +71,19 @@ public class PickerArm {
 
     //These numbers are for the first set of protrusions
     public static final int LEVEL_1_SHOULDER = 310;
-    public static final int LEVEL_1_WINCH = 1045;
+    public static final int LEVEL_1_WINCH = 1470;
 
-    public static final int LEVEL_2_SHOULDER = 120;
-    public static final int LEVEL_2_WINCH = 1045;
+    public static final int LEVEL_2_SHOULDER = 100;
+    public static final int LEVEL_2_WINCH = 1470;
 
     public static final int LEVEL_3_SHOULDER = 450;
-    public static final int LEVEL_3_WINCH = 2200;
+    public static final int LEVEL_3_WINCH = 2625;
 
-    public static final int LEVEL_4_SHOULDER = 150;
-    public static final int LEVEL_4_WINCH = 2200;
+    public static final int LEVEL_4_SHOULDER = 200;
+    public static final int LEVEL_4_WINCH = 2625;
 
     public static final int LEVEL_5_SHOULDER = 310;
-    public static final int LEVEL_5_WINCH = 2272;
+    public static final int LEVEL_5_WINCH = 2625;
 
     public static final int LEVEL_6_SHOULDER = 400;
     public static final int LEVEL_6_WINCH = 2820;
@@ -109,7 +109,7 @@ public class PickerArm {
         winchMotor = hardwareMap.get(DcMotor.class, WINCH_MOTOR);
 
         gripperServo = hardwareMap.get(Servo.class, GRIPPER_SERVO);
-        capStoneServo = hardwareMap.get(Servo.class, CAPSTONE_SERVO);
+        ringServo = hardwareMap.get(Servo.class, CAPSTONE_SERVO);
 
         // Set shoulder motor to run with encoders.
         this.shoulderMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -121,7 +121,7 @@ public class PickerArm {
         this.winchMotor.setZeroPowerBehavior(BRAKE);
         this.winchMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         closeGripper();
-        holdCapStone();
+        holdRing();
     }
 
     public void stop() {
@@ -151,12 +151,12 @@ public class PickerArm {
         this.gripperIsOpen = false;
     }
 
-    public void holdCapStone() {
-        this.capStoneServo.setPosition(CAPSTONE_HELD_POSITION);
+    public void holdRing() {
+        this.ringServo.setPosition(RING_HELD_POSITION);
     }
 
-    public void releaseCapstone() {
-        this.capStoneServo.setPosition(CAPSTONE_RELEASED_POSITION);
+    public void releaseRing() {
+        this.ringServo.setPosition(RING_RELEASED_POSITION);
     }
 
     public int getShoulderTarget() {

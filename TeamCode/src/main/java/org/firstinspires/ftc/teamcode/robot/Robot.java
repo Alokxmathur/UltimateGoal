@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import android.util.Log;
 
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.arcrobotics.ftclib.geometry.Pose2d;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -13,29 +14,26 @@ import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.components.FoundationGripper;
 import org.firstinspires.ftc.teamcode.robot.components.PhoebeColorSensor;
 import org.firstinspires.ftc.teamcode.robot.components.PickerArm;
-import org.firstinspires.ftc.teamcode.robot.components.SideGrippers;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
 import org.firstinspires.ftc.teamcode.robot.components.vision.VslamCamera;
 import org.firstinspires.ftc.teamcode.robot.components.vision.WebCam;
+import org.firstinspires.ftc.teamcode.robot.operations.BearingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.CameraOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.ClockwiseRotationOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceInDirectionOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.DistanceInDirectionOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.DistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveForTimeOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilColorOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.DriveUntilVuMarkOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.FollowTrajectory;
 import org.firstinspires.ftc.teamcode.robot.operations.FoundationGripperOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.GyroscopicBearingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.Operation;
 import org.firstinspires.ftc.teamcode.robot.operations.OperationThread;
 import org.firstinspires.ftc.teamcode.robot.operations.PickerOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.RotateUntilVuMarkOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.SideGrippersOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceWithHeadingOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForTimeOperation;
-import org.firstinspires.ftc.teamcode.robot.operations.StrafeUntilXYOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.WaitOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.WaitUntilVuMarkOperation;
 
@@ -66,12 +64,11 @@ public class Robot {
     MecanumDriveTrain mecanumDriveTrain = null;
     PickerArm pickerArm = null;
     FoundationGripper foundationGripper;
-    SideGrippers sideGrippers;
     PhoebeColorSensor phoebeColorSensor;
     WebCam camera;
     VslamCamera vslamCamera;
 
-    boolean everythingButVuforiaInitialized = false;
+    boolean everythingButCamerasInitialized = false;
 
     //Our sensors etc.
 
@@ -114,7 +111,7 @@ public class Robot {
         //initColorSensor();
         //initRealSenseCamera();
 
-        this.everythingButVuforiaInitialized = true;
+        this.everythingButCamerasInitialized = true;
         telemetry.update();
     }
 
@@ -122,7 +119,7 @@ public class Robot {
         //Create our drive train
         telemetry.addData("Status", "Initializing drive train, please wait");
         telemetry.update();
-        this.mecanumDriveTrain = new MecanumDriveTrain(hardwareMap, telemetry);
+        this.mecanumDriveTrain = new MecanumDriveTrain(hardwareMap, telemetry, vslamCamera);
     }
 
     public void initPickerArm(Telemetry telemetry) {
@@ -144,14 +141,13 @@ public class Robot {
     }
 
     public void initCameras(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
-        //initialize camera
+        //initialize Vslam camera
         telemetry.addData("Status", "Initializing VSLAM, please wait");
         telemetry.update();
-        this.vslamCamera = new VslamCamera();
-        this.vslamCamera.init(hardwareMap, allianceColor, startingPosition);
+        this.vslamCamera = VslamCamera.getCamera(hardwareMap);
 
         //initialize webcam
-        telemetry.addData("Status", "Initializing VuForia, please wait");
+        telemetry.addData("Status", "Initializing Cameras, please wait");
         telemetry.update();
         this.camera = new WebCam();
         this.camera.init(hardwareMap, telemetry, startingPosition);
@@ -177,7 +173,12 @@ public class Robot {
      * @return Motor Status
      */
     public String getMotorStatus() {
-        return this.mecanumDriveTrain.getStatus();
+        if (this.mecanumDriveTrain == null) {
+            return "Drivetrain ot initialized";
+        }
+        else {
+            return this.mecanumDriveTrain.getStatus();
+        }
     }
 
     /**
@@ -187,81 +188,75 @@ public class Robot {
      * @return
      */
     public boolean operationCompleted(Operation operation) {
-        switch (operation.getType()) {
-            case FOLLOW_TRAJECTORY: {
-                FollowTrajectory followTrajectoryOperation = (FollowTrajectory) operation;
-                return followTrajectoryOperation.isComplete(mecanumDriveTrain);
-            }
-            case DRIVE_FOR_DISTANCE: {
-                DriveForDistanceOperation driveForDistanceOperation = (DriveForDistanceOperation) operation;
-                return driveForDistanceOperation.isComplete(mecanumDriveTrain);
-            }
-            case DRIVE_UNTIL_VUMARK: {
-                DriveUntilVuMarkOperation driveUntilVuMarkOperation = (DriveUntilVuMarkOperation) operation;
-                return driveUntilVuMarkOperation.isComplete(mecanumDriveTrain, this);
-            }
-            case ROTATE_UNTIL_VUMARK: {
-                RotateUntilVuMarkOperation rotateUntilVuMarkOperation = (RotateUntilVuMarkOperation) operation;
-                return rotateUntilVuMarkOperation.isComplete(mecanumDriveTrain, this);
-            }
-            case DRIVE_UNTIL_COLOR: {
-                DriveUntilColorOperation driveUntilColorOperation = (DriveUntilColorOperation) operation;
-                return driveUntilColorOperation.isComplete(this.phoebeColorSensor, mecanumDriveTrain);
-            }
-            case GYROSCOPIC_DRIVE: {
-                DriveForDistanceInDirectionOperation driveForDistanceInDirectionOperation = (DriveForDistanceInDirectionOperation) operation;
-                return driveForDistanceInDirectionOperation.isComplete(this.mecanumDriveTrain);
-            }
-            case STRAFE_LEFT_FOR_DISTANCE: {
-                StrafeLeftForDistanceOperation strafeForDistanceOperation = (StrafeLeftForDistanceOperation) operation;
-                return strafeForDistanceOperation.isComplete(mecanumDriveTrain);
-            }
-            case STRAFE_LEFT_FOR_TIME: {
-                return ((StrafeLeftForTimeOperation) operation).isComplete(mecanumDriveTrain);
-            }
-            case STRAFE_LEFT_FOR_DISTANCE_WITH_HEADING: {
-                StrafeLeftForDistanceWithHeadingOperation gyroscopicStrafeForDistanceOperation = (StrafeLeftForDistanceWithHeadingOperation) operation;
-                return gyroscopicStrafeForDistanceOperation.isComplete(mecanumDriveTrain);
-            }
-            case STRAFE_UNTIL_XY: {
-                StrafeUntilXYOperation strafeUntilXYOperation = (StrafeUntilXYOperation) operation;
-                return strafeUntilXYOperation.isComplete(mecanumDriveTrain, this);
-            }
-            case ROTATION: {
-                ClockwiseRotationOperation clockwiseRotationOperation = (ClockwiseRotationOperation) operation;
-                return clockwiseRotationOperation.isComplete(mecanumDriveTrain);
-            }
-            case DRIVE_FOR_TIME: {
-                DriveForTimeOperation driveForTimeOperation = (DriveForTimeOperation) operation;
-                return driveForTimeOperation.isComplete(mecanumDriveTrain);
-            }
-            case BEARING: {
-                GyroscopicBearingOperation bearingOperation = (GyroscopicBearingOperation) operation;
-                return bearingOperation.isComplete(this.mecanumDriveTrain);
-            }
-            case WAIT_TIME: {
-                WaitOperation waitTimeOperation = (WaitOperation) operation;
-                return waitTimeOperation.isComplete();
-            }
-            case WAIT_UNTIL_VUMARK: {
-                WaitUntilVuMarkOperation waitUntilVuMarkOperation = (WaitUntilVuMarkOperation) operation;
-                return waitUntilVuMarkOperation.isComplete(this);
-            }
-            case CAMERA: {
-                CameraOperation cameraOperation = (CameraOperation) operation;
-                return cameraOperation.isComplete();
-            }
-            case PICKER_OPERATION: {
-                PickerOperation pickerOperation = (PickerOperation) operation;
-                return pickerOperation.isComplete(this.pickerArm);
-            }
-            case FOUNDATION_GRIPPER: {
-                FoundationGripperOperation foundationGripperOperation = (FoundationGripperOperation) operation;
-                return foundationGripper.isComplete(foundationGripperOperation);
-            }
-            case SIDE_GRIPPER: {
-                SideGrippersOperation sideGrippersOperation = (SideGrippersOperation) operation;
-                return sideGrippers.isComplete(sideGrippersOperation);
+        if (!operation.isAborted()) {
+            switch (operation.getType()) {
+                case FOLLOW_TRAJECTORY: {
+                    FollowTrajectory followTrajectoryOperation = (FollowTrajectory) operation;
+                    return followTrajectoryOperation.isComplete(mecanumDriveTrain);
+                }
+                case DRIVE_FOR_DISTANCE: {
+                    DistanceOperation distanceOperation = (DistanceOperation) operation;
+                    return distanceOperation.isComplete(mecanumDriveTrain);
+                }
+                case DRIVE_UNTIL_VUMARK: {
+                    DriveUntilVuMarkOperation driveUntilVuMarkOperation = (DriveUntilVuMarkOperation) operation;
+                    return driveUntilVuMarkOperation.isComplete(mecanumDriveTrain, this);
+                }
+                case ROTATE_UNTIL_VUMARK: {
+                    RotateUntilVuMarkOperation rotateUntilVuMarkOperation = (RotateUntilVuMarkOperation) operation;
+                    return rotateUntilVuMarkOperation.isComplete(mecanumDriveTrain, this);
+                }
+                case DRIVE_UNTIL_COLOR: {
+                    DriveUntilColorOperation driveUntilColorOperation = (DriveUntilColorOperation) operation;
+                    return driveUntilColorOperation.isComplete(this.phoebeColorSensor, mecanumDriveTrain);
+                }
+                case GYROSCOPIC_DRIVE: {
+                    DistanceInDirectionOperation distanceInDirectionOperation = (DistanceInDirectionOperation) operation;
+                    return distanceInDirectionOperation.isComplete(this.mecanumDriveTrain, Math.toDegrees(getCurrentTheta()));
+                }
+                case STRAFE_LEFT_FOR_DISTANCE: {
+                    StrafeLeftForDistanceOperation strafeForDistanceOperation = (StrafeLeftForDistanceOperation) operation;
+                    return strafeForDistanceOperation.isComplete(mecanumDriveTrain);
+                }
+                case STRAFE_LEFT_FOR_TIME: {
+                    return ((StrafeLeftForTimeOperation) operation).isComplete(mecanumDriveTrain);
+                }
+                case STRAFE_LEFT_FOR_DISTANCE_WITH_HEADING: {
+                    StrafeLeftForDistanceWithHeadingOperation gyroscopicStrafeForDistanceOperation = (StrafeLeftForDistanceWithHeadingOperation) operation;
+                    return gyroscopicStrafeForDistanceOperation.isComplete(mecanumDriveTrain, Math.toDegrees(getCurrentTheta()));
+                }
+                case ROTATION: {
+                    ClockwiseRotationOperation clockwiseRotationOperation = (ClockwiseRotationOperation) operation;
+                    return clockwiseRotationOperation.isComplete(mecanumDriveTrain);
+                }
+                case DRIVE_FOR_TIME: {
+                    DriveForTimeOperation driveForTimeOperation = (DriveForTimeOperation) operation;
+                    return driveForTimeOperation.isComplete(mecanumDriveTrain);
+                }
+                case BEARING: {
+                    BearingOperation bearingOperation = (BearingOperation) operation;
+                    return bearingOperation.isComplete(this.mecanumDriveTrain, Math.toDegrees(getCurrentTheta()));
+                }
+                case WAIT_TIME: {
+                    WaitOperation waitTimeOperation = (WaitOperation) operation;
+                    return waitTimeOperation.isComplete();
+                }
+                case WAIT_UNTIL_VUMARK: {
+                    WaitUntilVuMarkOperation waitUntilVuMarkOperation = (WaitUntilVuMarkOperation) operation;
+                    return waitUntilVuMarkOperation.isComplete(this);
+                }
+                case CAMERA: {
+                    CameraOperation cameraOperation = (CameraOperation) operation;
+                    return cameraOperation.isComplete();
+                }
+                case PICKER_OPERATION: {
+                    PickerOperation pickerOperation = (PickerOperation) operation;
+                    return pickerOperation.isComplete(this.pickerArm);
+                }
+                case FOUNDATION_GRIPPER: {
+                    FoundationGripperOperation foundationGripperOperation = (FoundationGripperOperation) operation;
+                    return foundationGripper.isComplete(foundationGripperOperation);
+                }
             }
         }
         return false;
@@ -277,85 +272,79 @@ public class Robot {
      * @param operation - the operation to execute
      */
     public void executeOperation(Operation operation) {
-        switch (operation.getType()) {
-            case FOLLOW_TRAJECTORY: {
-                this.mecanumDriveTrain.handleOperation((FollowTrajectory) operation);
-            }
-            case DRIVE_FOR_DISTANCE: {
-                this.mecanumDriveTrain.handleOperation((DriveForDistanceOperation) operation);
-                break;
-            }
-            case GYROSCOPIC_DRIVE: {
-                this.mecanumDriveTrain.handleOperation((DriveForDistanceInDirectionOperation) operation);
-                break;
-            }
-            case DRIVE_UNTIL_VUMARK: {
-                this.mecanumDriveTrain.handleOperation((DriveUntilVuMarkOperation) operation);
-                break;
-            }
-            case ROTATE_UNTIL_VUMARK: {
-                this.mecanumDriveTrain.handleOperation((RotateUntilVuMarkOperation) operation);
-            }
-            case DRIVE_UNTIL_COLOR: {
-                this.mecanumDriveTrain.handleOperation((DriveUntilColorOperation) operation);
-                break;
-            }
-            case STRAFE_LEFT_FOR_DISTANCE: {
-                this.mecanumDriveTrain.handleOperation((StrafeLeftForDistanceOperation) operation);
-                break;
-            }
-            case STRAFE_LEFT_FOR_TIME: {
-                this.mecanumDriveTrain.handleOperation((StrafeLeftForTimeOperation) operation);
-                break;
-            }
-            case STRAFE_LEFT_FOR_DISTANCE_WITH_HEADING: {
-                this.mecanumDriveTrain.handleOperation((StrafeLeftForDistanceWithHeadingOperation) operation);
-                break;
-            }
-            case STRAFE_UNTIL_XY: {
-                this.mecanumDriveTrain.handleOperation((StrafeUntilXYOperation) operation);
-                break;
-            }
-            case DRIVE_FOR_TIME: {
-                this.mecanumDriveTrain.handleOperation((DriveForTimeOperation) operation);
-                break;
-            }
-            case ROTATION: {
-                this.mecanumDriveTrain.handleOperation((ClockwiseRotationOperation) operation);
-                break;
-            }
-            case BEARING: {
-                this.mecanumDriveTrain.handleOperation((GyroscopicBearingOperation) operation);
-                break;
-            }
-            case WAIT_TIME: {
-                //don't have to do anything to execute the wait operation
-                break;
-            }
-            case WAIT_UNTIL_VUMARK: {
-                WaitUntilVuMarkOperation waitUntilVuMarkOperation = (WaitUntilVuMarkOperation) operation;
-                waitUntilVuMarkOperation.setStart();
-                break;
-            }
-            case CAMERA: {
-                CameraOperation cameraOperation = (CameraOperation) operation;
-                this.camera.handleOperation(cameraOperation);
-                break;
-            }
-            case PICKER_OPERATION: {
-                PickerOperation pickerOperation = (PickerOperation) operation;
-                this.pickerArm.handleOperation(pickerOperation);
-                break;
-            }
-            case FOUNDATION_GRIPPER: {
-                FoundationGripperOperation foundationGripperOperation = (FoundationGripperOperation) operation;
-                this.foundationGripper.handleOperation(foundationGripperOperation);
-                break;
-            }
-            case SIDE_GRIPPER: {
-                SideGrippersOperation sideGrippersOperation = (SideGrippersOperation) operation;
-                this.sideGrippers.handleOperation(sideGrippersOperation);
-                break;
+        if (!operation.isAborted()) {
+            switch (operation.getType()) {
+                case FOLLOW_TRAJECTORY: {
+                    this.mecanumDriveTrain.handleOperation((FollowTrajectory) operation);
+                    break;
+                }
+                case DRIVE_FOR_DISTANCE: {
+                    this.mecanumDriveTrain.handleOperation((DistanceOperation) operation);
+                    break;
+                }
+                case GYROSCOPIC_DRIVE: {
+                    this.mecanumDriveTrain.handleOperation((DistanceInDirectionOperation) operation);
+                    break;
+                }
+                case DRIVE_UNTIL_VUMARK: {
+                    this.mecanumDriveTrain.handleOperation((DriveUntilVuMarkOperation) operation);
+                    break;
+                }
+                case ROTATE_UNTIL_VUMARK: {
+                    this.mecanumDriveTrain.handleOperation((RotateUntilVuMarkOperation) operation);
+                }
+                case DRIVE_UNTIL_COLOR: {
+                    this.mecanumDriveTrain.handleOperation((DriveUntilColorOperation) operation);
+                    break;
+                }
+                case STRAFE_LEFT_FOR_DISTANCE: {
+                    this.mecanumDriveTrain.handleOperation((StrafeLeftForDistanceOperation) operation);
+                    break;
+                }
+                case STRAFE_LEFT_FOR_TIME: {
+                    this.mecanumDriveTrain.handleOperation((StrafeLeftForTimeOperation) operation);
+                    break;
+                }
+                case STRAFE_LEFT_FOR_DISTANCE_WITH_HEADING: {
+                    this.mecanumDriveTrain.handleOperation((StrafeLeftForDistanceWithHeadingOperation) operation);
+                    break;
+                }
+                case DRIVE_FOR_TIME: {
+                    this.mecanumDriveTrain.handleOperation((DriveForTimeOperation) operation);
+                    break;
+                }
+                case ROTATION: {
+                    this.mecanumDriveTrain.handleOperation((ClockwiseRotationOperation) operation);
+                    break;
+                }
+                case BEARING: {
+                    this.mecanumDriveTrain.handleOperation((BearingOperation) operation);
+                    break;
+                }
+                case WAIT_TIME: {
+                    //don't have to do anything to execute the wait operation
+                    break;
+                }
+                case WAIT_UNTIL_VUMARK: {
+                    WaitUntilVuMarkOperation waitUntilVuMarkOperation = (WaitUntilVuMarkOperation) operation;
+                    waitUntilVuMarkOperation.setStart();
+                    break;
+                }
+                case CAMERA: {
+                    CameraOperation cameraOperation = (CameraOperation) operation;
+                    this.camera.handleOperation(cameraOperation);
+                    break;
+                }
+                case PICKER_OPERATION: {
+                    PickerOperation pickerOperation = (PickerOperation) operation;
+                    this.pickerArm.handleOperation(pickerOperation);
+                    break;
+                }
+                case FOUNDATION_GRIPPER: {
+                    FoundationGripperOperation foundationGripperOperation = (FoundationGripperOperation) operation;
+                    this.foundationGripper.handleOperation(foundationGripperOperation);
+                    break;
+                }
             }
         }
     }
@@ -364,11 +353,12 @@ public class Robot {
         switch (operation.getType()) {
             case DRIVE_FOR_DISTANCE:
             case GYROSCOPIC_DRIVE:
+            case FOLLOW_TRAJECTORY:
+            case TURN:
             case DRIVE_UNTIL_VUMARK:
             case STRAFE_LEFT_FOR_DISTANCE:
             case STRAFE_LEFT_FOR_TIME:
             case STRAFE_LEFT_FOR_DISTANCE_WITH_HEADING:
-            case STRAFE_UNTIL_XY:
             case ROTATION:
             case ROTATE_UNTIL_VUMARK:
             case BEARING:
@@ -384,7 +374,6 @@ public class Robot {
             case WAIT_TIME:
             case WAIT_UNTIL_VUMARK:
             case FOUNDATION_GRIPPER:
-            case SIDE_GRIPPER:
             case CAMERA: {
                 break;
             }
@@ -400,20 +389,28 @@ public class Robot {
     public void queueTertiaryOperation(Operation operation) {
         this.operationThreadTertiary.queueUpOperation(operation);
     }
+
+    /**
+     * Returns the current x value of robot's center in mms
+     * @return
+     */
     public double getCurrentX() {
         return this.vslamCamera.getPosition().getX()*1000;
     }
 
+    /**
+     * Returns the current y value of robot's center in mms
+     * @return
+     */
     public double getCurrentY() {
         return this.vslamCamera.getPosition().getY()*1000;
     }
 
+    /**
+     * Returns the current heading of the robot in radians
+     * @return
+     */
     public double getCurrentTheta() {return this.vslamCamera.getPosition().getHeading();}
-
-    public double getBearing() {
-        //return this.camera.getCurrentBearing();
-        return this.mecanumDriveTrain.getIMU().getBearing();
-    }
 
     public boolean operationsCompleted() {
         return primaryOperationsCompleted() && secondaryOperationsCompleted() && tertiaryOperationsCompleted();
@@ -455,14 +452,13 @@ public class Robot {
     }
 
     public boolean fullyInitialized() {
-        return this.everythingButVuforiaInitialized && this.camera.isInitialized();
-    }
-
-    public boolean isGyroCalibrated() {
-        return this.mecanumDriveTrain.getIMU().isCalibrated();
+        return this.everythingButCamerasInitialized && this.camera.isInitialized() && this.vslamCamera.isInitialized();
     }
 
     public String getPickerArmStatus() {
+        if (this.pickerArm == null) {
+            return "Pickarm not init";
+        }
         return this.pickerArm.getStatus();
     }
 
@@ -472,22 +468,9 @@ public class Robot {
         double x = Math.pow(gamePad1.left_stick_x, 3) * multiplier; // Get left joystick's x-axis value.
         double y = -Math.pow(gamePad1.left_stick_y, 3) * multiplier; // Get left joystick's y-axis value.
 
-        double rotation = Math.pow(gamePad1.right_stick_x, 3) * 0.375; // Get right joystick's y-axis value for rotation
+        double rotation = Math.pow(gamePad1.right_stick_x, 3) * 0.375; // Get right joystick's x-axis value for rotation
 
-        this.mecanumDriveTrain.drive(Math.atan2(x, y), Math.hypot(x, y), rotation, false);
-
-        //if trigger is pressed, if the foundation gripper is not lowered, lower it
-        if (gamePad1.right_trigger > 0) {
-            if (!this.foundationGripper.isLowered()) {
-                this.foundationGripper.lowerGripper();
-            }
-        }
-        else {
-            //if trigger is not pressed, if the gripper is lowered, raise it
-            if (this.foundationGripper.isLowered()) {
-                this.foundationGripper.raiseGripper();
-            }
-        }
+        this.mecanumDriveTrain.drive(Math.atan2(x, y), Math.hypot(x, y), rotation);
     }
 
     public void handlePicker(Gamepad controller1, Gamepad controller2) {
@@ -545,13 +528,13 @@ public class Robot {
                 this.queuePrimaryOperation(new PickerOperation(PickerOperation.PickerOperationType.SHOULDER_LEVEL, "Pick"));
             }
 
-            //release capstone if controller 2 left bumper is pressed
+            //release ring if controller 2 left bumper is pressed
             if (controller2.left_bumper) {
-                this.pickerArm.releaseCapstone();
+                this.pickerArm.releaseRing();
             }
-            //hold capstone if controller 1 left bumper is pressed
-            if (controller1.left_bumper) {
-                this.pickerArm.holdCapStone();
+            //hold ring if controller 2 left trigger is pressed
+            if (controller2.left_trigger != 0) {
+                this.pickerArm.holdRing();
             }
             //go vertical if controller 1 left trigger is pressed
             if (controller1.left_trigger > 0) {
@@ -616,4 +599,22 @@ public class Robot {
         return this.camera.getNumberOfRings();
     }
 
+    public void setPose(Alliance.Color allianceColor, Field.StartingPosition startingPosition) {
+        this.mecanumDriveTrain.setLocalizer(vslamCamera);
+        this.vslamCamera.setStartingPose(allianceColor, startingPosition);
+    }
+
+    public TrajectoryBuilder getTrajectoryBuilder() {
+        return this.mecanumDriveTrain.trajectoryBuilder(new com.acmerobotics.roadrunner.geometry.Pose2d(0, 0, 0));
+    }
+
+    public com.acmerobotics.roadrunner.geometry.Pose2d getRoadRunnerPose() {
+        return new com.acmerobotics.roadrunner.geometry.Pose2d(getCurrentX()/Field.MM_PER_INCH, getCurrentY()/Field.MM_PER_INCH, getCurrentTheta());
+    }
+
+    public void ensureWheelDirection() {
+        if (this.mecanumDriveTrain != null) {
+            this.mecanumDriveTrain.ensureWheelDirection();
+        }
+    }
 }

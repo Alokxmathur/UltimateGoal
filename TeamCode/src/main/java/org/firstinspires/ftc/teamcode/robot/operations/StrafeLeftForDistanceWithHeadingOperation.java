@@ -32,14 +32,14 @@ public class StrafeLeftForDistanceWithHeadingOperation extends Operation {
                 this.title);
     }
 
-    public boolean isComplete(MecanumDriveTrain driveTrain) {
+    public boolean isComplete(MecanumDriveTrain driveTrain, double currentBearing) {
         if (driveTrain.driveTrainWithinRange()) {
             driveTrain.stop();
             return true;
         }
         else {
             // adjust relative SPEED based on desiredHeading error.
-            double bearingError = AngleUnit.normalizeDegrees(heading - driveTrain.getIMU().getBearing());
+            double bearingError = AngleUnit.normalizeDegrees(heading - currentBearing);
             double steer = MecanumDriveTrain.getSteer(bearingError, MecanumDriveTrain.P_DRIVE_COEFF);
 
             // if driving in reverse, the motor correction also needs to be reversed

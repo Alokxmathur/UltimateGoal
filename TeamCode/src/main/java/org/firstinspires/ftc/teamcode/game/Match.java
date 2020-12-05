@@ -205,8 +205,8 @@ public class Match {
         field.strokeLine(x1, y1, px, py);
         field.strokeLine(x2, y2, px, py);
 
-        packet.put("x", pose2d.getX()*1000/Field.MM_PER_INCH);
-        packet.put("y", pose2d.getY()*1000/Field.MM_PER_INCH);
+        packet.put("x", pose2d.getX()/Field.M_PER_INCH);
+        packet.put("y", pose2d.getY()/Field.M_PER_INCH);
         packet.put("theta", pose2d.getHeading());
 
         dashboard.sendTelemetryPacket(packet);

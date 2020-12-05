@@ -41,7 +41,7 @@ public class DriveForTimeOperation extends Operation {
             driveTrain.stop();
             return true;
         } else {
-            driveTrain.drive(this.desiredHeading, this.getSpeed(), 0, true);
+            driveTrain.drive(this.desiredHeading, this.getSpeed(), 0);
             return false;
         }
     }

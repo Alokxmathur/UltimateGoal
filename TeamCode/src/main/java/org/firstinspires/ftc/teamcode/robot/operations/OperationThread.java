@@ -32,7 +32,13 @@ public class OperationThread extends Thread {
                 if (this.operationsQueue.size() > 0) {
                     Operation operation = this.operationsQueue.get(0);
                     if (operation.getOperationIsBeingProcessed()) {
-                        if (robot.operationCompleted(operation)) {
+                        if (operation.isAborted()) {
+                            Match.log(title + ": Aborted operation: " + operation.toString()
+                                    + " at " + Match.getInstance().getElapsed()
+                                    + " in " + (new Date().getTime() - operation.getStartTime().getTime())
+                                    + " mSecs");
+                        }
+                        else if (robot.operationCompleted(operation)) {
                             this.operationsQueue.remove(0);
                             Match.log(title + ": Completed operation: " + operation.toString()
                                     + " at " + Match.getInstance().getElapsed()
@@ -61,16 +67,20 @@ public class OperationThread extends Thread {
     }
 
     public void abort() {
+        Match.log(title + ": Aborting operation thread");
         synchronized (threadLock) {
             //if we performing an operation - abort it
             if (this.operationsQueue.size() > 0) {
                 Operation operation = this.operationsQueue.get(0);
                 if (operation.getOperationIsBeingProcessed()) {
-                    robot.abortOperation(operation) ;
+                    Match.log(title + ": Aborting operation: " + operation.getTitle());
+                    robot.abortOperation(operation);
+                    operation.setAborted(true);
                 }
             }
-            this.operationsQueue = new ArrayList<Operation>();
+            this.operationsQueue.clear();
         }
+        Match.log(title + ": Aborted operation thread");
     }
 
     public boolean hasEntries() {

@@ -65,9 +65,6 @@ public class DriverControlledOperation extends OpMode {
     }
 
     private Robot robot = Match.getInstance().getRobot();
-    private float lastPower = 0;
-    private float lastTurn = 0;
-    private float lastLatchPower = 0;
 
     private Match match;
     /*
@@ -101,6 +98,8 @@ public class DriverControlledOperation extends OpMode {
      */
     @Override
     public void init_loop() {
+        match.updateTelemetry(telemetry, "TeleOpReady");
+        robot.ensureWheelDirection();
     }
 
     /*

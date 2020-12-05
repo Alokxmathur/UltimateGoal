@@ -228,58 +228,6 @@ public class WebCam {
         return visibleTarget != null ? visibleTarget.getName() : null;
     }
 
-    public float getCurrentX() {
-        if (lastLocation != null) {
-            VectorF translation = lastLocation.getTranslation();
-            return
-                    translation.get(0);
-        } else {
-            return -1;
-        }
-    }
-
-    public float getCurrentY() {
-        if (lastLocation != null) {
-            VectorF translation = lastLocation.getTranslation();
-            return
-                    translation.get(1);
-        } else {
-            return -1;
-        }
-    }
-
-    public float getCurrentZ() {
-        if (lastLocation != null) {
-            VectorF translation = lastLocation.getTranslation();
-            return
-                    translation.get(2);
-        } else {
-            return -1;
-        }
-    }
-
-    public float getCurrentTheta() {
-        if (lastLocation != null) {
-            Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-            return
-                    rotation.thirdAngle;
-        } else {
-            return -1;
-        }
-    }
-
-    public String getPosition() {
-        if (lastLocation != null) {
-            VectorF translation = lastLocation.getTranslation();
-            return String.format("{X, Y, Z} = %.2f, %.2f, %.2f",
-                    translation.get(0) / Field.MM_PER_INCH,
-                    translation.get(1) / Field.MM_PER_INCH,
-                    translation.get(2) / Field.MM_PER_INCH);
-        } else {
-            return "Target not found";
-        }
-    }
-
     public void turnLedOn() {
         ledControl.setPower(1);
     }

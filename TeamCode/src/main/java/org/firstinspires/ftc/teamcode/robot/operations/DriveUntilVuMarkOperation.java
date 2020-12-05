@@ -34,7 +34,7 @@ public class DriveUntilVuMarkOperation extends Operation {
             return true;
         }
         // adjust relative SPEED based on desiredHeading error.
-        double bearingError = AngleUnit.normalizeDegrees(direction - driveTrain.getIMU().getBearing());
+        double bearingError = AngleUnit.normalizeDegrees(direction - Math.toDegrees(robot.getCurrentTheta()));
         double steer = MecanumDriveTrain.getSteer(bearingError, MecanumDriveTrain.P_DRIVE_COEFF);
 
         // if driving in reverse, the motor correction also needs to be reversed

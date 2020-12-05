@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.robot.operations;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.game.Field;
+import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.components.drivetrain.MecanumDriveTrain;
 
 import java.util.Date;
@@ -11,13 +12,13 @@ import java.util.Locale;
  * Created by Silver Titans on 10/12/17.
  */
 
-public class DriveForDistanceInDirectionOperation extends DriveForDistanceOperation {
+public class DistanceInDirectionOperation extends DistanceOperation {
     private double distance;
     private double speed;
     double direction;
 
-    public DriveForDistanceInDirectionOperation(double travelDistance, double heading,
-                                    double speed, String title) {
+    public DistanceInDirectionOperation(double travelDistance, double heading,
+                                        double speed, String title) {
         super(travelDistance, travelDistance, title);
         this.distance = travelDistance;
         this.speed = speed;
@@ -33,13 +34,13 @@ public class DriveForDistanceInDirectionOperation extends DriveForDistanceOperat
     }
 
 
-    public boolean isComplete(MecanumDriveTrain driveTrain) {
+    public boolean isComplete(MecanumDriveTrain driveTrain, double currentBearing) {
         if (driveTrain.driveTrainWithinRange()) {
             driveTrain.stop();
             return true;
         } else {
             // adjust relative speed based on heading error.
-            double bearingError = AngleUnit.normalizeDegrees(direction - driveTrain.getIMU().getBearing());
+            double bearingError = AngleUnit.normalizeDegrees(direction - currentBearing);
             double steer = MecanumDriveTrain.getSteer(bearingError, MecanumDriveTrain.P_DRIVE_COEFF);
 
             // if driving in reverse, the motor correction also needs to be reversed
@@ -60,6 +61,8 @@ public class DriveForDistanceInDirectionOperation extends DriveForDistanceOperat
             driveTrain.setLeftRearPower(leftSpeed);
             driveTrain.setRightFrontPower(rightSpeed);
             driveTrain.setRightRearPower(rightSpeed);
+
+            Match.log(driveTrain.getStatus());
 
             return false;
         }

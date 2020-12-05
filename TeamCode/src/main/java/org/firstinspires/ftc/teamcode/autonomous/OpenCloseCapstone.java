@@ -18,10 +18,10 @@ public class OpenCloseCapstone extends LinearOpMode {
         Match match = Match.getNewInstance();
         try {
             PickerArm pickerArm = new PickerArm(hardwareMap, telemetry);
-            pickerArm.releaseCapstone();
+            pickerArm.releaseRing();
             //wait to begin
             waitForStart();
-            pickerArm.holdCapStone();
+            pickerArm.holdRing();
             while (opModeIsActive() && !isStopRequested()) {
             }
             Match.log("Stopped autonomous  <-------------");

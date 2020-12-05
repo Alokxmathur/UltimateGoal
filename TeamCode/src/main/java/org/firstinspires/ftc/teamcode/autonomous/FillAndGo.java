@@ -2,11 +2,10 @@ package org.firstinspires.ftc.teamcode.autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.game.Alliance;
 import org.firstinspires.ftc.teamcode.game.Field;
 import org.firstinspires.ftc.teamcode.game.Match;
 import org.firstinspires.ftc.teamcode.robot.Robot;
-import org.firstinspires.ftc.teamcode.robot.operations.DriveForDistanceOperation;
+import org.firstinspires.ftc.teamcode.robot.operations.DistanceOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.FoundationGripperOperation;
 import org.firstinspires.ftc.teamcode.robot.operations.Operation;
 import org.firstinspires.ftc.teamcode.robot.operations.StrafeLeftForDistanceOperation;
@@ -51,15 +50,15 @@ public class FillAndGo extends LinearOpMode {
                     double movementToApply = MOVEMENT_INCREMENT * multiplier;
 
                     if (gamepad1.dpad_up) {
-                        operations.add(new DriveForDistanceOperation(movementToApply, SPEED, "Move forward"));
+                        operations.add(new DistanceOperation(movementToApply, SPEED, "Move forward"));
                         if (gamepad1.right_trigger > 0) {
-                            robot.queuePrimaryOperation(new DriveForDistanceOperation(movementToApply, SPEED, "Move forward"));
+                            robot.queuePrimaryOperation(new DistanceOperation(movementToApply, SPEED, "Move forward"));
                         }
                         lastRecorded = new Date();
                     } else if (gamepad1.dpad_down) {
-                        operations.add(new DriveForDistanceOperation(-movementToApply, SPEED, "Move backward"));
+                        operations.add(new DistanceOperation(-movementToApply, SPEED, "Move backward"));
                         if (gamepad1.right_trigger > 0) {
-                            robot.queuePrimaryOperation(new DriveForDistanceOperation(-movementToApply, SPEED, "Move backward"));
+                            robot.queuePrimaryOperation(new DistanceOperation(-movementToApply, SPEED, "Move backward"));
                         }
                         lastRecorded = new Date();
                     } else if (gamepad1.dpad_left) {
